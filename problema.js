@@ -1,533 +1,470 @@
 // sistema de gestion de tienda online
-// hecho por: juan
-// fecha: no se
-// version: final_v2_BUENO_este_si
+// version: refactorizada
 
-var x = [];
-var x2 = [];
-var x3 = [];
-var DESCUENTO = 10;
-var DESCUENTO2 = 20;
-var DESCUENTO3 = 5;
-var flag = false;
-var flag2 = false;
-var flag3 = false;
-var temp = null;
-var temp2 = null;
-var temp3 = null;
-var c = 0;
-var c2 = 0;
-var c3 = 0;
-var DATA = [];
-var DATA2 = [];
-var DATA3 = [];
-var myList = [];
-var myList2 = [];
-var myList3 = [];
-var result;
-var result2;
-var result3;
-var n = 0;
-var nn = 0;
-var nnn = 0;
-var nnnn = 0;
-var aux;
-var aux2;
-var aux3;
-var ok = false;
-var ok2 = false;
-var ok3 = false;
-var theUser;
-var theUser2;
-var currentU;
-var sessData;
-var cartThing;
-var cartThing2;
-var myCart = [];
-var myCart2 = [];
-var totalVar = 0;
-var totalVar2 = 0;
-var totalVar3 = 0;
-var p = 0;
-var pp = 0;
-var ppp = 0;
-var i = 0;
-var ii = 0;
-var iii = 0;
-var j = 0;
-var jj = 0;
-var jjj = 0;
-var k = 0;
-var q = null;
-var q2 = null;
-var q3 = null;
-var response;
-var response2;
-var response3;
-var err;
-var err2;
-var err3;
-var d = new Date();
-var d2;
-var d3;
-var str1 = "";
-var str2 = "";
-var str3 = "";
-var bool1;
-var bool2;
-var bool3;
-var num1 = 0;
-var num2 = 0;
-var num3 = 0;
-var arr = [];
-var arr2 = [];
-var arr3 = [];
-var obj = {};
-var obj2 = {};
-var obj3 = {};
-var a, b, cc, dd, ee, ff, gg, hh, ii2, jj2;
 
-// =====================================
-// funcion principal que hace todo
-// =====================================
-function doEverything(u, p2, action, dat, extraDat, moreData, flag99, cb) {
-  // primero verificar usuario
-  var isOk = false;
-  var msg = "";
-  var tempUser = null;
-  var tempPass = null;
-  var dbUsers = [
-    { id: 1, nombre: "Juan Perez", email: "juan@mail.com", pass: "1234", tipo: "admin", puntos: 150, descuento: 0, historial: [], carrito: [], wishlist: [], direcciones: [], metodoPago: [], activo: true, intentos: 0, bloqueado: false, ultimoLogin: null, createdAt: "2023-01-01", updatedAt: "2023-06-01" },
-    { id: 2, nombre: "Maria Lopez", email: "maria@mail.com", pass: "abcd", tipo: "cliente", puntos: 80, descuento: 5, historial: [], carrito: [], wishlist: [], direcciones: [], metodoPago: [], activo: true, intentos: 0, bloqueado: false, ultimoLogin: null, createdAt: "2023-02-01", updatedAt: "2023-06-15" },
-    { id: 3, nombre: "Pedro Gonzalez", email: "pedro@mail.com", pass: "pass123", tipo: "vendedor", puntos: 200, descuento: 10, historial: [], carrito: [], wishlist: [], direcciones: [], metodoPago: [], activo: true, intentos: 0, bloqueado: false, ultimoLogin: null, createdAt: "2023-03-01", updatedAt: "2023-07-01" },
-    { id: 4, nombre: "Ana Martinez", email: "ana@mail.com", pass: "ana2024", tipo: "cliente", puntos: 50, descuento: 0, historial: [], carrito: [], wishlist: [], direcciones: [], metodoPago: [], activo: false, intentos: 3, bloqueado: true, ultimoLogin: null, createdAt: "2023-04-01", updatedAt: "2023-07-10" },
-    { id: 5, nombre: "Carlos Ruiz", email: "carlos@mail.com", pass: "carlos99", tipo: "cliente", puntos: 300, descuento: 15, historial: [], carrito: [], wishlist: [], direcciones: [], metodoPago: [], activo: true, intentos: 0, bloqueado: false, ultimoLogin: null, createdAt: "2023-05-01", updatedAt: "2023-08-01" }
-  ];
-  var dbProducts = [
-    { id: 101, nom: "Laptop Pro 15", cat: "electronica", prec: 1200000, stock: 5, desc: "Laptop de alto rendimiento", rating: 4.5, reviews: [], vendedor: 3, imgs: ["img1.jpg", "img2.jpg"], tags: ["laptop", "computador", "pro"], activo: true, createdAt: "2023-01-15" },
-    { id: 102, nom: "Mouse Inalambrico", cat: "accesorios", prec: 25000, stock: 50, desc: "Mouse ergonomico inalambrico", rating: 4.0, reviews: [], vendedor: 3, imgs: ["img3.jpg"], tags: ["mouse", "inalambrico"], activo: true, createdAt: "2023-01-20" },
-    { id: 103, nom: "Teclado Mecanico RGB", cat: "accesorios", prec: 85000, stock: 20, desc: "Teclado mecanico con iluminacion RGB", rating: 4.8, reviews: [], vendedor: 3, imgs: ["img4.jpg", "img5.jpg"], tags: ["teclado", "mecanico", "rgb"], activo: true, createdAt: "2023-02-01" },
-    { id: 104, nom: "Monitor 4K 27\"", cat: "electronica", prec: 450000, stock: 8, desc: "Monitor 4K con HDR", rating: 4.6, reviews: [], vendedor: 3, imgs: ["img6.jpg"], tags: ["monitor", "4k"], activo: true, createdAt: "2023-02-15" },
-    { id: 105, nom: "Auriculares Bluetooth", cat: "audio", prec: 75000, stock: 30, desc: "Auriculares con cancelacion de ruido", rating: 4.3, reviews: [], vendedor: 3, imgs: ["img7.jpg"], tags: ["auriculares", "bluetooth"], activo: true, createdAt: "2023-03-01" },
-    { id: 106, nom: "Webcam HD 1080p", cat: "accesorios", prec: 45000, stock: 15, desc: "Webcam para videoconferencias", rating: 4.1, reviews: [], vendedor: 3, imgs: ["img8.jpg"], tags: ["webcam", "camara"], activo: true, createdAt: "2023-03-15" },
-    { id: 107, nom: "SSD 1TB", cat: "almacenamiento", prec: 95000, stock: 25, desc: "SSD de alta velocidad", rating: 4.7, reviews: [], vendedor: 3, imgs: ["img9.jpg"], tags: ["ssd", "almacenamiento"], activo: true, createdAt: "2023-04-01" },
-    { id: 108, nom: "Memoria RAM 16GB", cat: "componentes", prec: 65000, stock: 40, desc: "RAM DDR4 3200MHz", rating: 4.4, reviews: [], vendedor: 3, imgs: ["img10.jpg"], tags: ["ram", "memoria"], activo: true, createdAt: "2023-04-15" },
-    { id: 109, nom: "Silla Gamer", cat: "muebles", prec: 350000, stock: 10, desc: "Silla ergonomica para gaming", rating: 4.2, reviews: [], vendedor: 3, imgs: ["img11.jpg"], tags: ["silla", "gamer"], activo: false, createdAt: "2023-05-01" },
-    { id: 110, nom: "Hub USB-C 7 en 1", cat: "accesorios", prec: 38000, stock: 60, desc: "Hub multipuerto USB-C", rating: 3.9, reviews: [], vendedor: 3, imgs: ["img12.jpg"], tags: ["hub", "usb"], activo: true, createdAt: "2023-05-15" }
+
+const DESCUENTO_BASE = 10;
+
+
+function doEverything(email, password, action, data, extraData, moreData, cb) {
+
+  const dbUsers = [
+    { id: 1, nombre: "Juan Perez", email: "juan@mail.com", pass: "1234", tipo: "admin", puntos: 150, activo: true, intentos: 0, bloqueado: false },
+    { id: 2, nombre: "Maria Lopez", email: "maria@mail.com", pass: "abcd", tipo: "cliente", puntos: 80, activo: true, intentos: 0, bloqueado: false }
   ];
 
-  // buscar usuario en la db
-  if (action == "login") {
-    for (var i = 0; i < dbUsers.length; i++) {
-      if (dbUsers[i].email == u && dbUsers[i].pass == p2) {
-        isOk = true;
-        tempUser = dbUsers[i];
+  const dbProducts = [
+    { id: 101, nom: "Laptop Pro 15", cat: "electronica", prec: 1200000, stock: 5, desc: "Laptop de alto rendimiento", rating: 4.5, tags: ["laptop"], activo: true },
+    { id: 102, nom: "Mouse Inalambrico", cat: "accesorios", prec: 25000, stock: 50, desc: "Mouse ergonomico", rating: 4.0, tags: ["mouse"], activo: true }
+  ];
+
+
+  if (action === "login") {
+    const user = dbUsers.find(u => u.email === email && u.pass === password);
+
+    if (!user) {
+      const userToUpdate = dbUsers.find(u => u.email === email);
+      if (userToUpdate) {
+        userToUpdate.intentos++;
+        if (userToUpdate.intentos >= 3) {
+          userToUpdate.bloqueado = true;
+        }
+      }
+      return cb({ ok: false, msg: "credenciales invalidas", data: null });
+    }
+
+    if (user.bloqueado) {
+      return cb({ ok: false, msg: "usuario bloqueado", data: null });
+    }
+
+    if (!user.activo) {
+      return cb({ ok: false, msg: "usuario inactivo", data: null });
+    }
+
+    // calcular nivel
+    let nivel = "bronce";
+    if (user.puntos >= 100) nivel = "plata";
+    if (user.puntos >= 200) nivel = "oro";
+    if (user.puntos >= 300) nivel = "platino";
+
+    user.nivel = nivel;
+    user.ultimoLogin = new Date().toISOString();
+
+    const session = {
+      user,
+      token: "tkn_" + Math.random().toString(36).substring(2),
+      loginTime: new Date()
+    };
+
+    return cb({ ok: true, msg: "login ok", data: session });
+  }
+
+  if (action === "buscarProductos") {
+
+    const query = data || "";
+    const categoria = extraData || null;
+    const min = moreData?.min ?? 0;
+    const max = moreData?.max ?? Infinity;
+
+    const resultados = dbProducts
+      .filter(prod => {
+        if (!prod.activo) return false;
+
+        let match = true;
+
+        if (query) {
+          const q = query.toLowerCase();
+          match =
+            prod.nom.toLowerCase().includes(q) ||
+            prod.desc.toLowerCase().includes(q) ||
+            prod.tags.some(tag => tag.toLowerCase().includes(q));
+        }
+
+        if (categoria && prod.cat !== categoria) {
+          match = false;
+        }
+
+        if (prod.prec < min || prod.prec > max) {
+          match = false;
+        }
+
+        return match;
+      })
+      .sort((a, b) => b.rating - a.rating);
+
+    return cb({ ok: true, msg: "ok", data: resultados });
+  }
+
+  return cb({ ok: false, msg: "accion no valida", data: null });
+}
+
+
+  // agregar al carrito
+  if (action == "addCart") {
+    var prodId = dat;
+    var qty = extraDat;
+    var userId2 = moreData;
+    var foundProd = null;
+    var foundUser = null;
+    for (var i = 0; i < dbProducts.length; i++) {
+      if (dbProducts[i].id == prodId) {
+        foundProd = dbProducts[i];
         break;
       }
     }
-    if (isOk == true) {
-      if (tempUser.bloqueado == true) {
-        msg = "usuario bloqueado";
-        isOk = false;
-        cb({ ok: false, msg: msg, data: null });
-        return;
+    for (var i = 0; i < dbUsers.length; i++) {
+      if (dbUsers[i].id == userId2) {
+        foundUser = dbUsers[i];
+        break;
       }
-      if (tempUser.activo == false) {
-        msg = "usuario inactivo";
-        isOk = false;
-        cb({ ok: false, msg: msg, data: null });
-        return;
-      }
-      // calcular nivel del usuario
-      var nivel = "";
-      if (tempUser.puntos >= 0 && tempUser.puntos < 100) {
-        nivel = "bronce";
-      }
-      if (tempUser.puntos >= 100 && tempUser.puntos < 200) {
-        nivel = "plata";
-      }
-      if (tempUser.puntos >= 200 && tempUser.puntos < 300) {
-        nivel = "oro";
-      }
-      if (tempUser.puntos >= 300) {
-        nivel = "platino";
-      }
-      tempUser.nivel = nivel;
-      tempUser.ultimoLogin = new Date().toISOString();
-      sessData = { user: tempUser, token: "tkn_" + Math.random().toString(36).substr(2, 9), loginTime: new Date() };
-      currentU = tempUser;
-      cb({ ok: true, msg: "login ok", data: sessData });
+    }
+    if (foundProd == null) {
+      cb({ ok: false, msg: "producto no encontrado", data: null });
       return;
-    } else {
-      // incrementar intentos fallidos
-      for (var i = 0; i < dbUsers.length; i++) {
-        if (dbUsers[i].email == u) {
-          dbUsers[i].intentos++;
-          if (dbUsers[i].intentos >= 3) {
-            dbUsers[i].bloqueado = true;
-          }
+    }
+    if (foundProd.activo == false) {
+      cb({ ok: false, msg: "producto no disponible", data: null });
+      return;
+    }
+    if (foundProd.stock < qty) {
+      cb({ ok: false, msg: "stock insuficiente", data: null });
+      return;
+    }
+    if (foundUser == null) {
+      cb({ ok: false, msg: "usuario no encontrado", data: null });
+      return;
+    }
+    // revisar si ya esta en el carrito
+    var yaEsta = false;
+    for (var i = 0; i < foundUser.carrito.length; i++) {
+      if (foundUser.carrito[i].prodId == prodId) {
+        foundUser.carrito[i].qty = foundUser.carrito[i].qty + qty;
+        yaEsta = true;
+        break;
+      }
+    }
+    if (yaEsta == false) {
+      foundUser.carrito.push({ prodId: prodId, qty: qty, addedAt: new Date() });
+    }
+    // calcular total del carrito
+    var total = 0;
+    for (var i = 0; i < foundUser.carrito.length; i++) {
+      for (var j = 0; j < dbProducts.length; j++) {
+        if (dbProducts[j].id == foundUser.carrito[i].prodId) {
+          total = total + (dbProducts[j].prec * foundUser.carrito[i].qty);
           break;
         }
       }
-      cb({ ok: false, msg: "credenciales invalidas", data: null });
-      return;
     }
-  }
-
-  // buscar productos
-  if (action == "buscarProductos") {
-    var query = dat;
-    var cat = extraDat;
-    var minP = moreData ? moreData.min : 0;
-    var maxP = moreData ? moreData.max : 999999999;
-    var res = [];
-    for (var i = 0; i < dbProducts.length; i++) {
-      var prod = dbProducts[i];
-      var match = false;
-      if (prod.activo == false) continue;
-      if (query && query != "" && query != null && query != undefined) {
-        if (prod.nom.toLowerCase().indexOf(query.toLowerCase()) != -1) {
-          match = true;
-        }
-        if (prod.desc.toLowerCase().indexOf(query.toLowerCase()) != -1) {
-          match = true;
-        }
-        for (var j = 0; j < prod.tags.length; j++) {
-          if (prod.tags[j].toLowerCase().indexOf(query.toLowerCase()) != -1) {
-            match = true;
-          }
-        }
-      } else {
-        match = true;
-      }
-      if (cat && cat != "" && cat != null && cat != undefined) {
-        if (prod.cat != cat) {
-          match = false;
-        }
-      }
-      if (prod.prec < minP || prod.prec > maxP) {
-        match = false;
-      }
-      if (match == true) {
-        res.push(prod);
-      }
-    }
-    // ordenar por rating
-    for (var i = 0; i < res.length - 1; i++) {
-      for (var j = 0; j < res.length - i - 1; j++) {
-        if (res[j].rating < res[j + 1].rating) {
-          var tmp = res[j];
-          res[j] = res[j + 1];
-          res[j + 1] = tmp;
-        }
-      }
-    }
-    cb({ ok: true, msg: "ok", data: res });
+    cb({ ok: true, msg: "producto agregado al carrito", data: { carrito: foundUser.carrito, total: total } });
     return;
   }
-// Funcion carro
-  function BuscarProducto(productos, id){
-    for(let i=0; i<productos.length; i++){
-        if(productos[i].id==id){
-            return productos[i];
+
+  // procesar pago y checkout
+  if (action == "checkout") {
+    var userId3 = dat;
+    var metodoPago = extraDat;
+    var direccion = moreData;
+    var foundUser2 = null;
+    for (var i = 0; i < dbUsers.length; i++) {
+      if (dbUsers[i].id == userId3) {
+        foundUser2 = dbUsers[i];
+        break;
+      }
+    }
+    if (foundUser2 == null) {
+      cb({ ok: false, msg: "usuario no encontrado", data: null });
+      return;
+    }
+    if (foundUser2.carrito.length == 0) {
+      cb({ ok: false, msg: "carrito vacio", data: null });
+      return;
+    }
+    // calcular subtotal
+    var subtotal = 0;
+    var itemsOrden = [];
+    for (var i = 0; i < foundUser2.carrito.length; i++) {
+      for (var j = 0; j < dbProducts.length; j++) {
+        if (dbProducts[j].id == foundUser2.carrito[i].prodId) {
+          var itemTotal = dbProducts[j].prec * foundUser2.carrito[i].qty;
+          subtotal = subtotal + itemTotal;
+          itemsOrden.push({ prod: dbProducts[j].nom, qty: foundUser2.carrito[i].qty, precUnit: dbProducts[j].prec, totalItem: itemTotal });
+          break;
         }
+      }
     }
-    return false;
-}
-function BuscarUsuario(usuarios, id){
-    for(let i=0; i<usuarios.length; i++){
-        if(usuarios[i].id==id){
-            return usuarios[i];
-        }
+    // aplicar descuentos
+    var descuento = 0;
+    var descuentoMonto = 0;
+    // descuento por nivel
+    if (foundUser2.puntos >= 0 && foundUser2.puntos < 100) {
+      descuento = 0;
     }
-    return false;
-}
-function AgregarAlCarrito(usuario, prodId, cantidad){
-    let existe=false;
-    for(let i=0; i<usuario.carrito.length; i++){
-        if(usuario.carrito[i].prodId==prodId){
-            usuario.carrito[i].cantidad+=cantidad;
-            existe=true;
-            break;
-        }
+    if (foundUser2.puntos >= 100 && foundUser2.puntos < 200) {
+      descuento = 5;
     }
-    if(existe==false){
-        usuario.carrito.push({
-            prodId: prodId,
-            cantidad: cantidad,
-            addedAt: new Date()
-        });
+    if (foundUser2.puntos >= 200 && foundUser2.puntos < 300) {
+      descuento = 10;
     }
-}
-function CalcularTotalCarrito(carrito, productos){
-    let total=0;
-    for(let i=0; i<carrito.length; i++){
-        for(let j=0; j<productos.length; j++){
-            if(productos[j].id==carrito[i].prodId){
-                total+=productos[j].prec*carrito[i].cantidad;
-                break;
-            }
-        }
+    if (foundUser2.puntos >= 300) {
+      descuento = 15;
     }
-    return total;
-}
-function AddCart(dbProducts, dbUsers, prodId, cantidad, userId, cb){
-    const producto=BuscarProducto(dbProducts, prodId);
-    const usuario=BuscarUsuario(dbUsers, userId);
-    if(producto==false){
-        cb({ok:false, msg:"producto no encontrado", data:false});
-        return;
-    }
-    if(producto.activo==false){
-        cb({ok:false, msg:"producto no disponible", data:false});
-        return;
-    }
-    if(producto.stock<cantidad){
-        cb({ok:false, msg:"stock insuficiente", data:false});
-        return;
-    }
-    if(usuario==false){
-        cb({ok:false, msg:"usuario no encontrado", data:false});
-        return;
-    }
-    AgregarAlCarrito(usuario, prodId, cantidad);
-    const total=CalcularTotalCarrito(usuario.carrito, dbProducts);
-    cb({
-        ok:true,
-        msg:"producto agregado al carrito",
-        data:{carrito:usuario.carrito, total:total}
-    });
-}
-function CalcularItemsYSubtotal(carrito, productos){
-    let subtotal=0;
-    let items=[];
-    for(let i=0; i<carrito.length; i++){
-        for(let j=0; j<productos.length; j++){
-            if(productos[j].id==carrito[i].prodId){
-                const totalItem=productos[j].prec*carrito[i].cantidad;
-                subtotal+=totalItem;
-                items.push({
-                    prod: productos[j].nom,
-                    cantidad: carrito[i].cantidad,
-                    precUnit: productos[j].prec,
-                    totalItem: totalItem
-                });
-                break;
-            }
-        }
-    }
-    return {subtotal:subtotal, items:items};
-}
-function CalcularTotales(subtotal, descuento){
-    const descuentoMonto=subtotal*(descuento/100);
-    const totalSinIva=subtotal-descuentoMonto;
-    const iva=totalSinIva*0.19;
-    const totalFinal=totalSinIva+iva;
-    return {
-        descuentoMonto:descuentoMonto, totalSinIva:totalSinIva, iva:iva, totalFinal:totalFinal
+    // descuento adicional del usuario
+    descuento = descuento + foundUser2.descuento;
+    descuentoMonto = subtotal * (descuento / 100);
+    var totalConDescuento = subtotal - descuentoMonto;
+    // calcular iva
+    var iva = totalConDescuento * 0.19;
+    var totalFinal = totalConDescuento + iva;
+    // calcular puntos ganados
+    var puntosGanados = Math.floor(totalFinal / 1000);
+    // crear orden
+    var ordenId = "ORD-" + Date.now();
+    var orden = {
+      id: ordenId,
+      userId: userId3,
+      items: itemsOrden,
+      subtotal: subtotal,
+      descuentoPct: descuento,
+      descuentoMonto: descuentoMonto,
+      totalSinIva: totalConDescuento,
+      iva: iva,
+      total: totalFinal,
+      metodoPago: metodoPago,
+      direccion: direccion,
+      estado: "pendiente",
+      puntosGanados: puntosGanados,
+      createdAt: new Date()
     };
-}
-function CrearOrden(userId, items, subtotal, descuento, totales, metodoPago, direccion, puntosGanados){
-    return {
-        id:"ORD-"+Date.now(), userId:userId, items:items, subtotal:subtotal, descuentoPct:descuento, descuentoMonto:totales.descuentoMonto,
-        totalSinIva:totales.totalSinIva, iva:totales.iva, total:totales.totalFinal, metodoPago:metodoPago, direccion:direccion, estado:"pendiente", puntosGanados:puntosGanados,
-        createdAt:new Date()
-    };
-}
-// Funcion de actualizar el stock
-function ActualizarStock(carro, productos){
-    for(let i=0; i<carro.length; i++){
-        const objetoCarrito=carro[i];
-        for(let j=0; j<productos.length; j++){
-            const producto=productos[j];
-            if(producto.id==objetoCarrito.prodId){
-                producto.stock-=objetoCarrito.cantidad;
-                break;
-            }
+    // actualizar stock
+    for (var i = 0; i < foundUser2.carrito.length; i++) {
+      for (var j = 0; j < dbProducts.length; j++) {
+        if (dbProducts[j].id == foundUser2.carrito[i].prodId) {
+          dbProducts[j].stock = dbProducts[j].stock - foundUser2.carrito[i].qty;
+          break;
         }
+      }
     }
-}
-function PuntosUsuario(usuario, puntitos){
-    usuario.puntos+=puntitos;
-}
-function LimpiarCarrito(usuario){
-    usuario.carrito=[];
-}
-function AgregarAlHistorial (usuario, laorden){
-    usuario.historial.push(laorden);
+    // agregar puntos al usuario
+    foundUser2.puntos = foundUser2.puntos + puntosGanados;
+    // limpiar carrito
+    foundUser2.carrito = [];
+    // agregar al historial
+    foundUser2.historial.push(orden);
+    // simular proceso de pago
+    var pagoOk = false;
+    if (metodoPago == "tarjeta") {
+      // simular validacion tarjeta
+      if (flag99 && flag99.numero && flag99.numero.length == 16 && flag99.cvv && flag99.cvv.length == 3) {
+        pagoOk = true;
+      } else {
+        cb({ ok: false, msg: "datos de tarjeta invalidos", data: null });
+        return;
+      }
+    }
+    if (metodoPago == "transferencia") {
+      pagoOk = true;
+    }
+    if (metodoPago == "efectivo") {
+      pagoOk = true;
+    }
+    if (pagoOk == true) {
+      orden.estado = "pagado";
+      cb({ ok: true, msg: "orden creada exitosamente", data: orden });
+    } else {
+      cb({ ok: false, msg: "metodo de pago no valido", data: null });
+    }
+    return;
+  }
+
+  // obtener estadisticas
+  if (action == "getStats") {
+    var stats = {};
+    // total usuarios
+    var totalUsers = 0;
+    var totalActivos = 0;
+    var totalBloqueados = 0;
+    var totalAdmin = 0;
+    var totalClientes = 0;
+    var totalVendedores = 0;
+    for (var i = 0; i < dbUsers.length; i++) {
+      totalUsers++;
+      if (dbUsers[i].activo == true) totalActivos++;
+      if (dbUsers[i].bloqueado == true) totalBloqueados++;
+      if (dbUsers[i].tipo == "admin") totalAdmin++;
+      if (dbUsers[i].tipo == "cliente") totalClientes++;
+      if (dbUsers[i].tipo == "vendedor") totalVendedores++;
+    }
+    // total productos
+    var totalProds = 0;
+    var totalActivos2 = 0;
+    var totalInactivos = 0;
+    var totalElectronica = 0;
+    var totalAccesorios = 0;
+    var totalAudio = 0;
+    var totalAlmacenamiento = 0;
+    var totalComponentes = 0;
+    var totalMuebles = 0;
+    var stockTotal = 0;
+    var valorInventario = 0;
+    for (var i = 0; i < dbProducts.length; i++) {
+      totalProds++;
+      if (dbProducts[i].activo == true) totalActivos2++;
+      if (dbProducts[i].activo == false) totalInactivos++;
+      if (dbProducts[i].cat == "electronica") totalElectronica++;
+      if (dbProducts[i].cat == "accesorios") totalAccesorios++;
+      if (dbProducts[i].cat == "audio") totalAudio++;
+      if (dbProducts[i].cat == "almacenamiento") totalAlmacenamiento++;
+      if (dbProducts[i].cat == "componentes") totalComponentes++;
+      if (dbProducts[i].cat == "muebles") totalMuebles++;
+      stockTotal = stockTotal + dbProducts[i].stock;
+      valorInventario = valorInventario + (dbProducts[i].prec * dbProducts[i].stock);
+    }
+    stats.usuarios = { total: totalUsers, activos: totalActivos, bloqueados: totalBloqueados, admin: totalAdmin, clientes: totalClientes, vendedores: totalVendedores };
+    stats.productos = { total: totalProds, activos: totalActivos2, inactivos: totalInactivos, porCategoria: { electronica: totalElectronica, accesorios: totalAccesorios, audio: totalAudio, almacenamiento: totalAlmacenamiento, componentes: totalComponentes, muebles: totalMuebles }, stockTotal: stockTotal, valorInventario: valorInventario };
+    cb({ ok: true, msg: "ok", data: stats });
+    return;
+  }
+
+  cb({ ok: false, msg: "accion no reconocida", data: null });
+
+
+// =====================================
+// mas funciones con malas practicas
+// =====================================
+
+// funcion para validar TODO
+function v(cosa, tipo) {
+  var r = false;
+  if (tipo == 1) {
+    // validar email
+    if (cosa != null && cosa != undefined && cosa != "" && cosa.indexOf("@") != -1 && cosa.indexOf(".") != -1) {
+      r = true;
+    }
+  }
+  if (tipo == 2) {
+    // validar pass
+    if (cosa != null && cosa != undefined && cosa.length >= 4) {
+      r = true;
+    }
+  }
+  if (tipo == 3) {
+    // validar numero
+    if (cosa != null && cosa != undefined && !isNaN(cosa) && cosa > 0) {
+      r = true;
+    }
+  }
+  if (tipo == 4) {
+    // validar string
+    if (cosa != null && cosa != undefined && cosa != "" && typeof cosa == "string") {
+      r = true;
+    }
+  }
+  if (tipo == 5) {
+    // validar array
+    if (cosa != null && cosa != undefined && Array.isArray(cosa) && cosa.length > 0) {
+      r = true;
+    }
+  }
+  if (tipo == 6) {
+    // validar objeto
+    if (cosa != null && cosa != undefined && typeof cosa == "object" && Object.keys(cosa).length > 0) {
+      r = true;
+    }
+  }
+  if (tipo == 7) {
+    // validar fecha
+    if (cosa != null && cosa != undefined) {
+      var dd2 = new Date(cosa);
+      if (!isNaN(dd2.getTime())) {
+        r = true;
+      }
+    }
+  }
+  if (tipo == 8) {
+    // validar rut chileno (super basico)
+    if (cosa != null && cosa != undefined && cosa != "" && cosa.length >= 8 && cosa.indexOf("-") != -1) {
+      r = true;
+    }
+  }
+  return r;
 }
 
-function ProcesoDelPago(metododepago, datostarjeta){
-    if(metododepago=="tarjeta"){
-        if(ValidarTarjeta(datostarjeta)==false){
-            return{ok:false, msg:"datos de tarjeta invalidos", data:false};
-        }
-        return{ok: true};
+// calcular precio con todo
+function calc(p, d, d2, d3, iva, envio, cuotas) {
+  // p = precio base
+  // d = descuento nivel
+  // d2 = descuento cupon
+  // d3 = descuento especial
+  // iva = si aplica iva
+  // envio = costo envio
+  // cuotas = numero cuotas
+  var r = 0;
+  var r2 = 0;
+  var r3 = 0;
+  var r4 = 0;
+  var r5 = 0;
+  var r6 = 0;
+  var r7 = 0;
+  r = p;
+  if (d > 0) {
+    r2 = r * (d / 100);
+    r = r - r2;
+  }
+  if (d2 > 0) {
+    r3 = r * (d2 / 100);
+    r = r - r3;
+  }
+  if (d3 > 0) {
+    r4 = r * (d3 / 100);
+    r = r - r4;
+  }
+  if (iva == true) {
+    r5 = r * 0.19;
+    r = r + r5;
+  }
+  if (envio > 0) {
+    r = r + envio;
+  }
+  r6 = r;
+  if (cuotas > 1) {
+    // agregar interes segun cuotas
+    if (cuotas == 2) {
+      r7 = r * 0.02;
+      r = r + r7;
     }
-    if(metododepago=="transferencia"|| metododepago=="efectivo"){
-        return{ok: true};
+    if (cuotas == 3) {
+      r7 = r * 0.04;
+      r = r + r7;
     }
-    return{ok:false, msg:"metodo de pago no valido", data:false};
-}
-function ValidarTarjeta(datostarjeta){
-    if(datostarjeta==false){
-        return false;
+    if (cuotas == 6) {
+      r7 = r * 0.08;
+      r = r + r7;
     }
-    if(datostarjeta.numero=="" || datostarjeta.numero.length!=16){
-        return false;
+    if (cuotas == 12) {
+      r7 = r * 0.15;
+      r = r + r7;
     }
-    if(datostarjeta.cvv==""||datostarjeta.cvv.length!=3){
-        return false;
+    if (cuotas == 24) {
+      r7 = r * 0.28;
+      r = r + r7;
     }
-    return true;
-}
-  function GetStats(usuarios, productos){
-    const StatsUsuarios=getstatsUsuarios(usuarios);
-    const StatsProductos=getstatsProductos(productos);
-    return {usuarios:StatsUsuarios, productos:StatsProductos};
-}
-function getstatsUsuarios(usuarios){
-    let total=0;
-    let activos=0;
-    let bloqueados=0;
-    let admin=0;
-    let clientes=0;
-    let vendedores=0;
-    for (let i=0; i<usuarios.length; i++){
-        const people=usuarios[i];
-        total++;
-        if (people.activo==true){
-            activos++;
-        }
-        if (people.bloqueado==true){
-            bloqueados++;
-        }
-        if (people.tipo=="admin"){
-            admin++;
-        }
-        if (people.tipo=="cliente"){
-            clientes++;
-        }
-        if (people.tipo=="vendedor"){
-           vendedores++; 
-        }
+    if (cuotas == 36) {
+      r7 = r * 0.45;
+      r = r + r7;
     }
-    return {
-        total:total, activos:activos, bloqueados:bloqueados, admin:admin, clientes:clientes, vendedores:vendedores
-    };
-}
-function getstatsProductos(productos){
-    let total=0;
-    let activos=0;
-    let inactivos=0;
-    let electronica=0;
-    let accesorios=0;
-    let audio=0;
-    let almacenamiento=0;
-    let componentes=0;
-    let muebles=0;
-    let totalstock=0;
-    let PrecioInventario=0;
-    for (let i=0; i<productos.length; i++){
-        const product=productos[i]; //product asi bien english (me estoy quedando sin nombrescabron)
-        total++;
-        if(product.activo==true){
-            activos++;
-        }
-        if(product.activo==false){
-            inactivos++;
-        }
-        if(product.cat=="electronica"){
-            electronica++;
-        }
-        if(product.cat=="accesorios"){
-            accesorios++;
-        }
-        if(product.cat=="audio"){
-            audio++;
-        }
-        if(product.cat=="almacenamiento"){
-            almacenamiento++;
-        }
-        if(product.cat=="componentes"){
-            componentes++;
-        }
-        if(product.cat=="muebles"){
-            muebles++;
-        }
-        totalstock+=product.stock;
-        PrecioInventario+=product.prec*product.stock;
-    }
-    return {
-        total:total, activos:activos, inactivos:inactivos, porCategoria:{
-            electronica:electronica, accesorios:accesorios, audio:audio, almacenamiento:almacenamiento, componentes:componentes, muebles:muebles
-        }, totalstock:totalstock, PrecioInventario:PrecioInventario
-    };
-}
-}
-function CalculoDePrecio(precioOG, Desc1, Desc2, Desc3, AplicaIVA, CostoEnvio, cuotas) {
-    let precio=precioOG;
-    precio=AplicarDescuento(precio, Desc1);
-    precio=AplicarDescuento(precio, Desc2);
-    precio=AplicarDescuento(precio, Desc3);
-    const subtotal=precio;
-    if (AplicaIVA==true) {
-        precio=AplicarIVA(precio);
-    }
-    precio+=CostoEnvio;
-    const PrecioTotal=AplicarInteresOCuotas(precio, cuotas);
-    return {
-        base:precioOG, subtotal:subtotal, envio:CostoEnvio, total:PrecioTotal, CuotaTotal:cuotas>1? PrecioTotal/cuotas:PrecioTotal
-    };
-}
-function AplicarDescuento(precio, descuento) {
-    if (descuento>0) {
-        return precio-(precio*(descuento/100));
-    }
-    return precio;
-}
-function AplicarIVA(precio) {
-    return precio+(precio*0.19);
-}
-function AplicarInteresOCuotas(precio, cuotas) {
-    let interes=0;
-    if (cuotas==2){
-        interes=0.02;
-    }
-    if (cuotas==3){
-        interes=0.04;
-    }
-    if (cuotas==6){
-        interes=0.08;
-    }
-    if (cuotas==12){
-        interes=0.15;
-    }
-    if (cuotas==24){
-        interes=0.28;
-    }
-    if (cuotas==36){
-        interes=0.45;
-    }
-    if (cuotas>1) {
-        return precio+(precio*interes);
-    }
-    return precio;
-}
-function Checkout(foundUser2, dbProducts, metodoPago, flag99, puntosGanados, orden, cb) {
-    const ResultadoDelPrecio=CalculoDePrecio(orden.precioOG, orden.Desc1, orden.Desc2, orden.Desc3, true, orden.envio, orden.cuotas);
-    orden.total=ResultadoDelPrecio.total;
-    const ResultadoDelPago=ProcesoDelPago(metodoPago, flag99);
-    if (ResultadoDelPago.ok==false) {
-        cb(ResultadoDelPago);
-        return;
-    }
-    ActualizarStock(foundUser2.carrito, dbProducts);
-    PuntosUsuario(foundUser2, puntosGanados);
-    LimpiarCarrito(foundUser2);
-    AgregarAlHistorial(foundUser2, orden);
-    orden.estado="pagado";
-    cb({ok:true, msg:"orden creada exitosamente", data:orden});  //pa actualizar this things
+  }
+  return {
+    base: p,
+    dscto1: r2,
+    dscto2: r3,
+    dscto3: r4,
+    subtotal: r6,
+    iva: r5,
+    envio: envio,
+    totalCuota: cuotas > 1 ? r / cuotas : r,
+    total: r
+  };
 }
 
 // funcion de reporte
@@ -1135,141 +1072,157 @@ function paginateOrders(items3, page3, size3) {
   return { items: pageItems3, page: page3, totalPages: totalPages3, total: total3, size: size3 };
 }
 
-
-// Franco
-// refactorizacion de sorting
-function sortByField(items, field, order) {
-  const sortedItems = items.slice();
-
-  sortedItems.sort((a, b) => {
-    if (a[field] === b[field]) return 0;
-
-    const isAscending = order === "asc";
-
-    return (a[field] < b[field])
-      ? (isAscending ? -1 : 1)
-      : (isAscending ? 1 : -1);
+// funcion de sorting tambien duplicada
+function sortProducts(arr4, field, order) {
+  var sorted = arr4.slice();
+  sorted.sort(function(a, b) {
+    if (order == "asc") {
+      if (a[field] < b[field]) return -1;
+      if (a[field] > b[field]) return 1;
+      return 0;
+    } else {
+      if (a[field] > b[field]) return -1;
+      if (a[field] < b[field]) return 1;
+      return 0;
+    }
   });
-
-  return sortedItems;
+  return sorted;
+}
+function sortUsers(arr5, field2, order2) {
+  var sorted2 = arr5.slice();
+  sorted2.sort(function(a2, b2) {
+    if (order2 == "asc") {
+      if (a2[field2] < b2[field2]) return -1;
+      if (a2[field2] > b2[field2]) return 1;
+      return 0;
+    } else {
+      if (a2[field2] > b2[field2]) return -1;
+      if (a2[field2] < b2[field2]) return 1;
+      return 0;
+    }
+  });
+  return sorted2;
+}
+function sortOrders(arr6, field3, order3) {
+  var sorted3 = arr6.slice();
+  sorted3.sort(function(a3, b3) {
+    if (order3 == "asc") {
+      if (a3[field3] < b3[field3]) return -1;
+      if (a3[field3] > b3[field3]) return 1;
+      return 0;
+    } else {
+      if (a3[field3] > b3[field3]) return -1;
+      if (a3[field3] < b3[field3]) return 1;
+      return 0;
+    }
+  });
+  return sorted3;
 }
 
-function sortProducts(products, field, order) {
-  return sortByField(products, field, order);
+// codigo muerto y comentado que nadie elimina
+// function oldSearch(q) {
+//   // esto ya no se usa pero no lo borro por si acaso
+//   var r = [];
+//   // for(var i=0; i<prods.length;i++) { if(prods[i].nom.includes(q)) r.push(prods[i]); }
+//   return r;
+// }
+// var oldDiscount = function(p) { return p * 0.9 } // ya no se usa
+// TODO: implementar busqueda por voz algun dia
+// FIXME: el carrito a veces pierde items (conocido desde marzo)
+// HACK: esto funciona pero no se por que, no tocar
+// var weirdFix = x => x ? x : (x = [], x);
+
+// funciones de fecha/hora sin libreria y con logica embebida
+function formatDate(d4) {
+  var day = d4.getDate();
+  var month = d4.getMonth() + 1;
+  var year = d4.getFullYear();
+  var hours = d4.getHours();
+  var mins = d4.getMinutes();
+  var secs = d4.getSeconds();
+  if (day < 10) day = "0" + day;
+  if (month < 10) month = "0" + month;
+  if (hours < 10) hours = "0" + hours;
+  if (mins < 10) mins = "0" + mins;
+  if (secs < 10) secs = "0" + secs;
+  return day + "/" + month + "/" + year + " " + hours + ":" + mins + ":" + secs;
+}
+function formatDate2(d5) { // igual que la anterior
+  var day2 = d5.getDate();
+  var month2 = d5.getMonth() + 1;
+  var year2 = d5.getFullYear();
+  if (day2 < 10) day2 = "0" + day2;
+  if (month2 < 10) month2 = "0" + month2;
+  return day2 + "/" + month2 + "/" + year2;
+}
+function formatDate3(dateStr) { // otra variante
+  var parts = dateStr.split("-");
+  return parts[2] + "/" + parts[1] + "/" + parts[0];
 }
 
-function sortUsers(users, field, order) {
-  return sortByField(users, field, order);
+// funcion de "utilidades" que hace 10 cosas diferentes
+function utils(op, val, val2, val3) {
+  if (op == "capitalize") {
+    return val.charAt(0).toUpperCase() + val.slice(1).toLowerCase();
+  }
+  if (op == "truncate") {
+    return val.length > val2 ? val.substring(0, val2) + "..." : val;
+  }
+  if (op == "random") {
+    return Math.floor(Math.random() * (val2 - val + 1)) + val;
+  }
+  if (op == "slugify") {
+    return val.toLowerCase().replace(/ /g, "-").replace(/[^\w-]+/g, "");
+  }
+  if (op == "deepClone") {
+    return JSON.parse(JSON.stringify(val));
+  }
+  if (op == "isEmptyObj") {
+    return Object.keys(val).length === 0;
+  }
+  if (op == "sumArray") {
+    var s = 0; for (var i = 0; i < val.length; i++) s += val[i]; return s;
+  }
+  if (op == "avgArray") {
+    var s2 = 0; for (var i = 0; i < val.length; i++) s2 += val[i]; return val.length > 0 ? s2 / val.length : 0;
+  }
+  if (op == "uniqueArray") {
+    var u = []; for (var i = 0; i < val.length; i++) { if (u.indexOf(val[i]) == -1) u.push(val[i]); } return u;
+  }
+  if (op == "flatArray") {
+    var f = []; for (var i = 0; i < val.length; i++) { if (Array.isArray(val[i])) { for (var j = 0; j < val[i].length; j++) f.push(val[i][j]); } else f.push(val[i]); } return f;
+  }
 }
 
-function sortOrders(orders, field, order) {
-  return sortByField(orders, field, order);
-}
-
-
-// formateo de fecha unificado
-function padNumber(value) {
-  return value < 10 ? "0" + value : value;
-}
-
-function formatDateTime(date) {
-  const day = padNumber(date.getDate());
-  const month = padNumber(date.getMonth() + 1);
-  const year = date.getFullYear();
-
-  const hours = padNumber(date.getHours());
-  const minutes = padNumber(date.getMinutes());
-  const seconds = padNumber(date.getSeconds());
-
-  return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
-}
-
-function formatDateOnly(date) {
-  const day = padNumber(date.getDate());
-  const month = padNumber(date.getMonth() + 1);
-  const year = date.getFullYear();
-
-  return `${day}/${month}/${year}`;
-}
-
-function formatDateFromString(dateString) {
-  const [year, month, day] = dateString.split("-");
-  return `${day}/${month}/${year}`;
-}
-
-
-// utils reemplazado por funciones reales
-function capitalize(text) {
-  return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
-}
-function truncate(text, maxLength) {
-  return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
-}
-function getRandomNumber(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-function slugify(text) {
-  return text.toLowerCase().replace(/ /g, "-").replace(/[^\w-]+/g, "");
-}
-function deepClone(object) {
-  return JSON.parse(JSON.stringify(object));
-}
-function isEmptyObject(obj) {
-  return Object.keys(obj).length === 0;
-}
-function sumArray(numbers) {
-  return numbers.reduce((sum, n) => sum + n, 0);
-}
-function averageArray(numbers) {
-  return numbers.length ? sumArray(numbers) / numbers.length : 0;
-}
-function uniqueArray(array) {
-  return [...new Set(array)];
-}
-function flattenArray(array) {
-  return array.flat();
-}
-
-// export limpio
+// exportar todo junto sin modularizacion
 module.exports = {
-  doEverything,
-  v,
-  calc,
-  makeReport,
-  sendNotif,
-  notifyUser,
-  cupon,
-  search,
-  fmtPrice,
-  renderProduct,
-  processRegistrationFormAndValidateAndSaveAndSendEmailAndLoginAndRedirect,
-  wishlist,
-  updateUserProfile,
-  reviews,
-  calcShipping,
-  checkInventory,
-  log,
-  paginateProducts,
-  paginateUsers,
-  paginateOrders,
-  sortProducts,
-  sortUsers,
-  sortOrders,
-
-  // fechas
-  formatDateTime,
-  formatDateOnly,
-  formatDateFromString,
-
-  // utils separadas
-  capitalize,
-  truncate,
-  getRandomNumber,
-  slugify,
-  deepClone,
-  isEmptyObject,
-  sumArray,
-  averageArray,
-  uniqueArray,
-  flattenArray
+  doEverything: doEverything,
+  v: v,
+  calc: calc,
+  makeReport: makeReport,
+  sendNotif: sendNotif,
+  notifyUser: notifyUser,
+  cupon: cupon,
+  search: search,
+  fmtPrice: fmtPrice,
+  formatearPrecio: formatearPrecio,
+  mostrarPrecio: mostrarPrecio,
+  renderProduct: renderProduct,
+  processRegistrationFormAndValidateAndSaveAndSendEmailAndLoginAndRedirect: processRegistrationFormAndValidateAndSaveAndSendEmailAndLoginAndRedirect,
+  wishlist: wishlist,
+  updateUserProfile: updateUserProfile,
+  reviews: reviews,
+  calcShipping: calcShipping,
+  checkInventory: checkInventory,
+  log: log,
+  paginateProducts: paginateProducts,
+  paginateUsers: paginateUsers,
+  paginateOrders: paginateOrders,
+  sortProducts: sortProducts,
+  sortUsers: sortUsers,
+  sortOrders: sortOrders,
+  formatDate: formatDate,
+  formatDate2: formatDate2,
+  formatDate3: formatDate3,
+  utils: utils
 };
