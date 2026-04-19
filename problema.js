@@ -1135,157 +1135,141 @@ function paginateOrders(items3, page3, size3) {
   return { items: pageItems3, page: page3, totalPages: totalPages3, total: total3, size: size3 };
 }
 
-// funcion de sorting tambien duplicada
-function sortProducts(arr4, field, order) {
-  var sorted = arr4.slice();
-  sorted.sort(function(a, b) {
-    if (order == "asc") {
-      if (a[field] < b[field]) return -1;
-      if (a[field] > b[field]) return 1;
-      return 0;
-    } else {
-      if (a[field] > b[field]) return -1;
-      if (a[field] < b[field]) return 1;
-      return 0;
-    }
+
+// Franco
+// refactorizacion de sorting
+function sortByField(items, field, order) {
+  const sortedItems = items.slice();
+
+  sortedItems.sort((a, b) => {
+    if (a[field] === b[field]) return 0;
+
+    const isAscending = order === "asc";
+
+    return (a[field] < b[field])
+      ? (isAscending ? -1 : 1)
+      : (isAscending ? 1 : -1);
   });
-  return sorted;
-}
-function sortUsers(arr5, field2, order2) {
-  var sorted2 = arr5.slice();
-  sorted2.sort(function(a2, b2) {
-    if (order2 == "asc") {
-      if (a2[field2] < b2[field2]) return -1;
-      if (a2[field2] > b2[field2]) return 1;
-      return 0;
-    } else {
-      if (a2[field2] > b2[field2]) return -1;
-      if (a2[field2] < b2[field2]) return 1;
-      return 0;
-    }
-  });
-  return sorted2;
-}
-function sortOrders(arr6, field3, order3) {
-  var sorted3 = arr6.slice();
-  sorted3.sort(function(a3, b3) {
-    if (order3 == "asc") {
-      if (a3[field3] < b3[field3]) return -1;
-      if (a3[field3] > b3[field3]) return 1;
-      return 0;
-    } else {
-      if (a3[field3] > b3[field3]) return -1;
-      if (a3[field3] < b3[field3]) return 1;
-      return 0;
-    }
-  });
-  return sorted3;
+
+  return sortedItems;
 }
 
-// codigo muerto y comentado que nadie elimina
-// function oldSearch(q) {
-//   // esto ya no se usa pero no lo borro por si acaso
-//   var r = [];
-//   // for(var i=0; i<prods.length;i++) { if(prods[i].nom.includes(q)) r.push(prods[i]); }
-//   return r;
-// }
-// var oldDiscount = function(p) { return p * 0.9 } // ya no se usa
-// TODO: implementar busqueda por voz algun dia
-// FIXME: el carrito a veces pierde items (conocido desde marzo)
-// HACK: esto funciona pero no se por que, no tocar
-// var weirdFix = x => x ? x : (x = [], x);
-
-// funciones de fecha/hora sin libreria y con logica embebida
-function formatDate(d4) {
-  var day = d4.getDate();
-  var month = d4.getMonth() + 1;
-  var year = d4.getFullYear();
-  var hours = d4.getHours();
-  var mins = d4.getMinutes();
-  var secs = d4.getSeconds();
-  if (day < 10) day = "0" + day;
-  if (month < 10) month = "0" + month;
-  if (hours < 10) hours = "0" + hours;
-  if (mins < 10) mins = "0" + mins;
-  if (secs < 10) secs = "0" + secs;
-  return day + "/" + month + "/" + year + " " + hours + ":" + mins + ":" + secs;
-}
-function formatDate2(d5) { // igual que la anterior
-  var day2 = d5.getDate();
-  var month2 = d5.getMonth() + 1;
-  var year2 = d5.getFullYear();
-  if (day2 < 10) day2 = "0" + day2;
-  if (month2 < 10) month2 = "0" + month2;
-  return day2 + "/" + month2 + "/" + year2;
-}
-function formatDate3(dateStr) { // otra variante
-  var parts = dateStr.split("-");
-  return parts[2] + "/" + parts[1] + "/" + parts[0];
+function sortProducts(products, field, order) {
+  return sortByField(products, field, order);
 }
 
-// funcion de "utilidades" que hace 10 cosas diferentes
-function utils(op, val, val2, val3) {
-  if (op == "capitalize") {
-    return val.charAt(0).toUpperCase() + val.slice(1).toLowerCase();
-  }
-  if (op == "truncate") {
-    return val.length > val2 ? val.substring(0, val2) + "..." : val;
-  }
-  if (op == "random") {
-    return Math.floor(Math.random() * (val2 - val + 1)) + val;
-  }
-  if (op == "slugify") {
-    return val.toLowerCase().replace(/ /g, "-").replace(/[^\w-]+/g, "");
-  }
-  if (op == "deepClone") {
-    return JSON.parse(JSON.stringify(val));
-  }
-  if (op == "isEmptyObj") {
-    return Object.keys(val).length === 0;
-  }
-  if (op == "sumArray") {
-    var s = 0; for (var i = 0; i < val.length; i++) s += val[i]; return s;
-  }
-  if (op == "avgArray") {
-    var s2 = 0; for (var i = 0; i < val.length; i++) s2 += val[i]; return val.length > 0 ? s2 / val.length : 0;
-  }
-  if (op == "uniqueArray") {
-    var u = []; for (var i = 0; i < val.length; i++) { if (u.indexOf(val[i]) == -1) u.push(val[i]); } return u;
-  }
-  if (op == "flatArray") {
-    var f = []; for (var i = 0; i < val.length; i++) { if (Array.isArray(val[i])) { for (var j = 0; j < val[i].length; j++) f.push(val[i][j]); } else f.push(val[i]); } return f;
-  }
+function sortUsers(users, field, order) {
+  return sortByField(users, field, order);
 }
 
-// exportar todo junto sin modularizacion
+function sortOrders(orders, field, order) {
+  return sortByField(orders, field, order);
+}
+
+
+// formateo de fecha unificado
+function padNumber(value) {
+  return value < 10 ? "0" + value : value;
+}
+
+function formatDateTime(date) {
+  const day = padNumber(date.getDate());
+  const month = padNumber(date.getMonth() + 1);
+  const year = date.getFullYear();
+
+  const hours = padNumber(date.getHours());
+  const minutes = padNumber(date.getMinutes());
+  const seconds = padNumber(date.getSeconds());
+
+  return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+}
+
+function formatDateOnly(date) {
+  const day = padNumber(date.getDate());
+  const month = padNumber(date.getMonth() + 1);
+  const year = date.getFullYear();
+
+  return `${day}/${month}/${year}`;
+}
+
+function formatDateFromString(dateString) {
+  const [year, month, day] = dateString.split("-");
+  return `${day}/${month}/${year}`;
+}
+
+
+// utils reemplazado por funciones reales
+function capitalize(text) {
+  return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+}
+function truncate(text, maxLength) {
+  return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
+}
+function getRandomNumber(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+function slugify(text) {
+  return text.toLowerCase().replace(/ /g, "-").replace(/[^\w-]+/g, "");
+}
+function deepClone(object) {
+  return JSON.parse(JSON.stringify(object));
+}
+function isEmptyObject(obj) {
+  return Object.keys(obj).length === 0;
+}
+function sumArray(numbers) {
+  return numbers.reduce((sum, n) => sum + n, 0);
+}
+function averageArray(numbers) {
+  return numbers.length ? sumArray(numbers) / numbers.length : 0;
+}
+function uniqueArray(array) {
+  return [...new Set(array)];
+}
+function flattenArray(array) {
+  return array.flat();
+}
+
+// export limpio
 module.exports = {
-  doEverything: doEverything,
-  v: v,
-  calc: calc,
-  makeReport: makeReport,
-  sendNotif: sendNotif,
-  notifyUser: notifyUser,
-  cupon: cupon,
-  search: search,
-  fmtPrice: fmtPrice,
-  formatearPrecio: formatearPrecio,
-  mostrarPrecio: mostrarPrecio,
-  renderProduct: renderProduct,
-  processRegistrationFormAndValidateAndSaveAndSendEmailAndLoginAndRedirect: processRegistrationFormAndValidateAndSaveAndSendEmailAndLoginAndRedirect,
-  wishlist: wishlist,
-  updateUserProfile: updateUserProfile,
-  reviews: reviews,
-  calcShipping: calcShipping,
-  checkInventory: checkInventory,
-  log: log,
-  paginateProducts: paginateProducts,
-  paginateUsers: paginateUsers,
-  paginateOrders: paginateOrders,
-  sortProducts: sortProducts,
-  sortUsers: sortUsers,
-  sortOrders: sortOrders,
-  formatDate: formatDate,
-  formatDate2: formatDate2,
-  formatDate3: formatDate3,
-  utils: utils
+  doEverything,
+  v,
+  calc,
+  makeReport,
+  sendNotif,
+  notifyUser,
+  cupon,
+  search,
+  fmtPrice,
+  renderProduct,
+  processRegistrationFormAndValidateAndSaveAndSendEmailAndLoginAndRedirect,
+  wishlist,
+  updateUserProfile,
+  reviews,
+  calcShipping,
+  checkInventory,
+  log,
+  paginateProducts,
+  paginateUsers,
+  paginateOrders,
+  sortProducts,
+  sortUsers,
+  sortOrders,
+
+  // fechas
+  formatDateTime,
+  formatDateOnly,
+  formatDateFromString,
+
+  // utils separadas
+  capitalize,
+  truncate,
+  getRandomNumber,
+  slugify,
+  deepClone,
+  isEmptyObject,
+  sumArray,
+  averageArray,
+  uniqueArray,
+  flattenArray
 };
