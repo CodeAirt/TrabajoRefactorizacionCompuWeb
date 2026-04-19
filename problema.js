@@ -225,373 +225,309 @@ function doEverything(u, p2, action, dat, extraDat, moreData, flag99, cb) {
     cb({ ok: true, msg: "ok", data: res });
     return;
   }
-
-  // agregar al carrito
-  if (action == "addCart") {
-    var prodId = dat;
-    var qty = extraDat;
-    var userId2 = moreData;
-    var foundProd = null;
-    var foundUser = null;
-    for (var i = 0; i < dbProducts.length; i++) {
-      if (dbProducts[i].id == prodId) {
-        foundProd = dbProducts[i];
-        break;
-      }
-    }
-    for (var i = 0; i < dbUsers.length; i++) {
-      if (dbUsers[i].id == userId2) {
-        foundUser = dbUsers[i];
-        break;
-      }
-    }
-    if (foundProd == null) {
-      cb({ ok: false, msg: "producto no encontrado", data: null });
-      return;
-    }
-    if (foundProd.activo == false) {
-      cb({ ok: false, msg: "producto no disponible", data: null });
-      return;
-    }
-    if (foundProd.stock < qty) {
-      cb({ ok: false, msg: "stock insuficiente", data: null });
-      return;
-    }
-    if (foundUser == null) {
-      cb({ ok: false, msg: "usuario no encontrado", data: null });
-      return;
-    }
-    // revisar si ya esta en el carrito
-    var yaEsta = false;
-    for (var i = 0; i < foundUser.carrito.length; i++) {
-      if (foundUser.carrito[i].prodId == prodId) {
-        foundUser.carrito[i].qty = foundUser.carrito[i].qty + qty;
-        yaEsta = true;
-        break;
-      }
-    }
-    if (yaEsta == false) {
-      foundUser.carrito.push({ prodId: prodId, qty: qty, addedAt: new Date() });
-    }
-    // calcular total del carrito
-    var total = 0;
-    for (var i = 0; i < foundUser.carrito.length; i++) {
-      for (var j = 0; j < dbProducts.length; j++) {
-        if (dbProducts[j].id == foundUser.carrito[i].prodId) {
-          total = total + (dbProducts[j].prec * foundUser.carrito[i].qty);
-          break;
+// Funcion carro
+  function BuscarProducto(productos, id){
+    for(let i=0; i<productos.length; i++){
+        if(productos[i].id==id){
+            return productos[i];
         }
-      }
     }
-    cb({ ok: true, msg: "producto agregado al carrito", data: { carrito: foundUser.carrito, total: total } });
-    return;
-  }
-
-  // procesar pago y checkout
-  if (action == "checkout") {
-    var userId3 = dat;
-    var metodoPago = extraDat;
-    var direccion = moreData;
-    var foundUser2 = null;
-    for (var i = 0; i < dbUsers.length; i++) {
-      if (dbUsers[i].id == userId3) {
-        foundUser2 = dbUsers[i];
-        break;
-      }
-    }
-    if (foundUser2 == null) {
-      cb({ ok: false, msg: "usuario no encontrado", data: null });
-      return;
-    }
-    if (foundUser2.carrito.length == 0) {
-      cb({ ok: false, msg: "carrito vacio", data: null });
-      return;
-    }
-    // calcular subtotal
-    var subtotal = 0;
-    var itemsOrden = [];
-    for (var i = 0; i < foundUser2.carrito.length; i++) {
-      for (var j = 0; j < dbProducts.length; j++) {
-        if (dbProducts[j].id == foundUser2.carrito[i].prodId) {
-          var itemTotal = dbProducts[j].prec * foundUser2.carrito[i].qty;
-          subtotal = subtotal + itemTotal;
-          itemsOrden.push({ prod: dbProducts[j].nom, qty: foundUser2.carrito[i].qty, precUnit: dbProducts[j].prec, totalItem: itemTotal });
-          break;
+    return false;
+}
+function BuscarUsuario(usuarios, id){
+    for(let i=0; i<usuarios.length; i++){
+        if(usuarios[i].id==id){
+            return usuarios[i];
         }
-      }
     }
-    // aplicar descuentos
-    var descuento = 0;
-    var descuentoMonto = 0;
-    // descuento por nivel
-    if (foundUser2.puntos >= 0 && foundUser2.puntos < 100) {
-      descuento = 0;
-    }
-    if (foundUser2.puntos >= 100 && foundUser2.puntos < 200) {
-      descuento = 5;
-    }
-    if (foundUser2.puntos >= 200 && foundUser2.puntos < 300) {
-      descuento = 10;
-    }
-    if (foundUser2.puntos >= 300) {
-      descuento = 15;
-    }
-    // descuento adicional del usuario
-    descuento = descuento + foundUser2.descuento;
-    descuentoMonto = subtotal * (descuento / 100);
-    var totalConDescuento = subtotal - descuentoMonto;
-    // calcular iva
-    var iva = totalConDescuento * 0.19;
-    var totalFinal = totalConDescuento + iva;
-    // calcular puntos ganados
-    var puntosGanados = Math.floor(totalFinal / 1000);
-    // crear orden
-    var ordenId = "ORD-" + Date.now();
-    var orden = {
-      id: ordenId,
-      userId: userId3,
-      items: itemsOrden,
-      subtotal: subtotal,
-      descuentoPct: descuento,
-      descuentoMonto: descuentoMonto,
-      totalSinIva: totalConDescuento,
-      iva: iva,
-      total: totalFinal,
-      metodoPago: metodoPago,
-      direccion: direccion,
-      estado: "pendiente",
-      puntosGanados: puntosGanados,
-      createdAt: new Date()
-    };
-    // actualizar stock
-    for (var i = 0; i < foundUser2.carrito.length; i++) {
-      for (var j = 0; j < dbProducts.length; j++) {
-        if (dbProducts[j].id == foundUser2.carrito[i].prodId) {
-          dbProducts[j].stock = dbProducts[j].stock - foundUser2.carrito[i].qty;
-          break;
+    return false;
+}
+function AgregarAlCarrito(usuario, prodId, cantidad){
+    let existe=false;
+    for(let i=0; i<usuario.carrito.length; i++){
+        if(usuario.carrito[i].prodId==prodId){
+            usuario.carrito[i].cantidad+=cantidad;
+            existe=true;
+            break;
         }
-      }
     }
-    // agregar puntos al usuario
-    foundUser2.puntos = foundUser2.puntos + puntosGanados;
-    // limpiar carrito
-    foundUser2.carrito = [];
-    // agregar al historial
-    foundUser2.historial.push(orden);
-    // simular proceso de pago
-    var pagoOk = false;
-    if (metodoPago == "tarjeta") {
-      // simular validacion tarjeta
-      if (flag99 && flag99.numero && flag99.numero.length == 16 && flag99.cvv && flag99.cvv.length == 3) {
-        pagoOk = true;
-      } else {
-        cb({ ok: false, msg: "datos de tarjeta invalidos", data: null });
+    if(existe==false){
+        usuario.carrito.push({
+            prodId: prodId,
+            cantidad: cantidad,
+            addedAt: new Date()
+        });
+    }
+}
+function CalcularTotalCarrito(carrito, productos){
+    let total=0;
+    for(let i=0; i<carrito.length; i++){
+        for(let j=0; j<productos.length; j++){
+            if(productos[j].id==carrito[i].prodId){
+                total+=productos[j].prec*carrito[i].cantidad;
+                break;
+            }
+        }
+    }
+    return total;
+}
+function AddCart(dbProducts, dbUsers, prodId, cantidad, userId, cb){
+    const producto=BuscarProducto(dbProducts, prodId);
+    const usuario=BuscarUsuario(dbUsers, userId);
+    if(producto==false){
+        cb({ok:false, msg:"producto no encontrado", data:false});
         return;
-      }
     }
-    if (metodoPago == "transferencia") {
-      pagoOk = true;
+    if(producto.activo==false){
+        cb({ok:false, msg:"producto no disponible", data:false});
+        return;
     }
-    if (metodoPago == "efectivo") {
-      pagoOk = true;
+    if(producto.stock<cantidad){
+        cb({ok:false, msg:"stock insuficiente", data:false});
+        return;
     }
-    if (pagoOk == true) {
-      orden.estado = "pagado";
-      cb({ ok: true, msg: "orden creada exitosamente", data: orden });
-    } else {
-      cb({ ok: false, msg: "metodo de pago no valido", data: null });
+    if(usuario==false){
+        cb({ok:false, msg:"usuario no encontrado", data:false});
+        return;
     }
-    return;
-  }
-
-  // obtener estadisticas
-  if (action == "getStats") {
-    var stats = {};
-    // total usuarios
-    var totalUsers = 0;
-    var totalActivos = 0;
-    var totalBloqueados = 0;
-    var totalAdmin = 0;
-    var totalClientes = 0;
-    var totalVendedores = 0;
-    for (var i = 0; i < dbUsers.length; i++) {
-      totalUsers++;
-      if (dbUsers[i].activo == true) totalActivos++;
-      if (dbUsers[i].bloqueado == true) totalBloqueados++;
-      if (dbUsers[i].tipo == "admin") totalAdmin++;
-      if (dbUsers[i].tipo == "cliente") totalClientes++;
-      if (dbUsers[i].tipo == "vendedor") totalVendedores++;
+    AgregarAlCarrito(usuario, prodId, cantidad);
+    const total=CalcularTotalCarrito(usuario.carrito, dbProducts);
+    cb({
+        ok:true,
+        msg:"producto agregado al carrito",
+        data:{carrito:usuario.carrito, total:total}
+    });
+}
+function CalcularItemsYSubtotal(carrito, productos){
+    let subtotal=0;
+    let items=[];
+    for(let i=0; i<carrito.length; i++){
+        for(let j=0; j<productos.length; j++){
+            if(productos[j].id==carrito[i].prodId){
+                const totalItem=productos[j].prec*carrito[i].cantidad;
+                subtotal+=totalItem;
+                items.push({
+                    prod: productos[j].nom,
+                    cantidad: carrito[i].cantidad,
+                    precUnit: productos[j].prec,
+                    totalItem: totalItem
+                });
+                break;
+            }
+        }
     }
-    // total productos
-    var totalProds = 0;
-    var totalActivos2 = 0;
-    var totalInactivos = 0;
-    var totalElectronica = 0;
-    var totalAccesorios = 0;
-    var totalAudio = 0;
-    var totalAlmacenamiento = 0;
-    var totalComponentes = 0;
-    var totalMuebles = 0;
-    var stockTotal = 0;
-    var valorInventario = 0;
-    for (var i = 0; i < dbProducts.length; i++) {
-      totalProds++;
-      if (dbProducts[i].activo == true) totalActivos2++;
-      if (dbProducts[i].activo == false) totalInactivos++;
-      if (dbProducts[i].cat == "electronica") totalElectronica++;
-      if (dbProducts[i].cat == "accesorios") totalAccesorios++;
-      if (dbProducts[i].cat == "audio") totalAudio++;
-      if (dbProducts[i].cat == "almacenamiento") totalAlmacenamiento++;
-      if (dbProducts[i].cat == "componentes") totalComponentes++;
-      if (dbProducts[i].cat == "muebles") totalMuebles++;
-      stockTotal = stockTotal + dbProducts[i].stock;
-      valorInventario = valorInventario + (dbProducts[i].prec * dbProducts[i].stock);
+    return {subtotal:subtotal, items:items};
+}
+function CalcularTotales(subtotal, descuento){
+    const descuentoMonto=subtotal*(descuento/100);
+    const totalSinIva=subtotal-descuentoMonto;
+    const iva=totalSinIva*0.19;
+    const totalFinal=totalSinIva+iva;
+    return {
+        descuentoMonto:descuentoMonto, totalSinIva:totalSinIva, iva:iva, totalFinal:totalFinal
+    };
+}
+function CrearOrden(userId, items, subtotal, descuento, totales, metodoPago, direccion, puntosGanados){
+    return {
+        id:"ORD-"+Date.now(), userId:userId, items:items, subtotal:subtotal, descuentoPct:descuento, descuentoMonto:totales.descuentoMonto,
+        totalSinIva:totales.totalSinIva, iva:totales.iva, total:totales.totalFinal, metodoPago:metodoPago, direccion:direccion, estado:"pendiente", puntosGanados:puntosGanados,
+        createdAt:new Date()
+    };
+}
+// Funcion de actualizar el stock
+function ActualizarStock(carro, productos){
+    for(let i=0; i<carro.length; i++){
+        const objetoCarrito=carro[i];
+        for(let j=0; j<productos.length; j++){
+            const producto=productos[j];
+            if(producto.id==objetoCarrito.prodId){
+                producto.stock-=objetoCarrito.cantidad;
+                break;
+            }
+        }
     }
-    stats.usuarios = { total: totalUsers, activos: totalActivos, bloqueados: totalBloqueados, admin: totalAdmin, clientes: totalClientes, vendedores: totalVendedores };
-    stats.productos = { total: totalProds, activos: totalActivos2, inactivos: totalInactivos, porCategoria: { electronica: totalElectronica, accesorios: totalAccesorios, audio: totalAudio, almacenamiento: totalAlmacenamiento, componentes: totalComponentes, muebles: totalMuebles }, stockTotal: stockTotal, valorInventario: valorInventario };
-    cb({ ok: true, msg: "ok", data: stats });
-    return;
-  }
-
-  cb({ ok: false, msg: "accion no reconocida", data: null });
+}
+function PuntosUsuario(usuario, puntitos){
+    usuario.puntos+=puntitos;
+}
+function LimpiarCarrito(usuario){
+    usuario.carrito=[];
+}
+function AgregarAlHistorial (usuario, laorden){
+    usuario.historial.push(laorden);
 }
 
-// =====================================
-// mas funciones con malas practicas
-// =====================================
-
-// funcion para validar TODO
-function v(cosa, tipo) {
-  var r = false;
-  if (tipo == 1) {
-    // validar email
-    if (cosa != null && cosa != undefined && cosa != "" && cosa.indexOf("@") != -1 && cosa.indexOf(".") != -1) {
-      r = true;
+function ProcesoDelPago(metododepago, datostarjeta){
+    if(metododepago=="tarjeta"){
+        if(ValidarTarjeta(datostarjeta)==false){
+            return{ok:false, msg:"datos de tarjeta invalidos", data:false};
+        }
+        return{ok: true};
     }
-  }
-  if (tipo == 2) {
-    // validar pass
-    if (cosa != null && cosa != undefined && cosa.length >= 4) {
-      r = true;
+    if(metododepago=="transferencia"|| metododepago=="efectivo"){
+        return{ok: true};
     }
-  }
-  if (tipo == 3) {
-    // validar numero
-    if (cosa != null && cosa != undefined && !isNaN(cosa) && cosa > 0) {
-      r = true;
-    }
-  }
-  if (tipo == 4) {
-    // validar string
-    if (cosa != null && cosa != undefined && cosa != "" && typeof cosa == "string") {
-      r = true;
-    }
-  }
-  if (tipo == 5) {
-    // validar array
-    if (cosa != null && cosa != undefined && Array.isArray(cosa) && cosa.length > 0) {
-      r = true;
-    }
-  }
-  if (tipo == 6) {
-    // validar objeto
-    if (cosa != null && cosa != undefined && typeof cosa == "object" && Object.keys(cosa).length > 0) {
-      r = true;
-    }
-  }
-  if (tipo == 7) {
-    // validar fecha
-    if (cosa != null && cosa != undefined) {
-      var dd2 = new Date(cosa);
-      if (!isNaN(dd2.getTime())) {
-        r = true;
-      }
-    }
-  }
-  if (tipo == 8) {
-    // validar rut chileno (super basico)
-    if (cosa != null && cosa != undefined && cosa != "" && cosa.length >= 8 && cosa.indexOf("-") != -1) {
-      r = true;
-    }
-  }
-  return r;
+    return{ok:false, msg:"metodo de pago no valido", data:false};
 }
-
-// calcular precio con todo
-function calc(p, d, d2, d3, iva, envio, cuotas) {
-  // p = precio base
-  // d = descuento nivel
-  // d2 = descuento cupon
-  // d3 = descuento especial
-  // iva = si aplica iva
-  // envio = costo envio
-  // cuotas = numero cuotas
-  var r = 0;
-  var r2 = 0;
-  var r3 = 0;
-  var r4 = 0;
-  var r5 = 0;
-  var r6 = 0;
-  var r7 = 0;
-  r = p;
-  if (d > 0) {
-    r2 = r * (d / 100);
-    r = r - r2;
-  }
-  if (d2 > 0) {
-    r3 = r * (d2 / 100);
-    r = r - r3;
-  }
-  if (d3 > 0) {
-    r4 = r * (d3 / 100);
-    r = r - r4;
-  }
-  if (iva == true) {
-    r5 = r * 0.19;
-    r = r + r5;
-  }
-  if (envio > 0) {
-    r = r + envio;
-  }
-  r6 = r;
-  if (cuotas > 1) {
-    // agregar interes segun cuotas
-    if (cuotas == 2) {
-      r7 = r * 0.02;
-      r = r + r7;
+function ValidarTarjeta(datostarjeta){
+    if(datostarjeta==false){
+        return false;
     }
-    if (cuotas == 3) {
-      r7 = r * 0.04;
-      r = r + r7;
+    if(datostarjeta.numero=="" || datostarjeta.numero.length!=16){
+        return false;
     }
-    if (cuotas == 6) {
-      r7 = r * 0.08;
-      r = r + r7;
+    if(datostarjeta.cvv==""||datostarjeta.cvv.length!=3){
+        return false;
     }
-    if (cuotas == 12) {
-      r7 = r * 0.15;
-      r = r + r7;
+    return true;
+}
+  function GetStats(usuarios, productos){
+    const StatsUsuarios=getstatsUsuarios(usuarios);
+    const StatsProductos=getstatsProductos(productos);
+    return {usuarios:StatsUsuarios, productos:StatsProductos};
+}
+function getstatsUsuarios(usuarios){
+    let total=0;
+    let activos=0;
+    let bloqueados=0;
+    let admin=0;
+    let clientes=0;
+    let vendedores=0;
+    for (let i=0; i<usuarios.length; i++){
+        const people=usuarios[i];
+        total++;
+        if (people.activo==true){
+            activos++;
+        }
+        if (people.bloqueado==true){
+            bloqueados++;
+        }
+        if (people.tipo=="admin"){
+            admin++;
+        }
+        if (people.tipo=="cliente"){
+            clientes++;
+        }
+        if (people.tipo=="vendedor"){
+           vendedores++; 
+        }
     }
-    if (cuotas == 24) {
-      r7 = r * 0.28;
-      r = r + r7;
+    return {
+        total:total, activos:activos, bloqueados:bloqueados, admin:admin, clientes:clientes, vendedores:vendedores
+    };
+}
+function getstatsProductos(productos){
+    let total=0;
+    let activos=0;
+    let inactivos=0;
+    let electronica=0;
+    let accesorios=0;
+    let audio=0;
+    let almacenamiento=0;
+    let componentes=0;
+    let muebles=0;
+    let totalstock=0;
+    let PrecioInventario=0;
+    for (let i=0; i<productos.length; i++){
+        const product=productos[i]; //product asi bien english (me estoy quedando sin nombrescabron)
+        total++;
+        if(product.activo==true){
+            activos++;
+        }
+        if(product.activo==false){
+            inactivos++;
+        }
+        if(product.cat=="electronica"){
+            electronica++;
+        }
+        if(product.cat=="accesorios"){
+            accesorios++;
+        }
+        if(product.cat=="audio"){
+            audio++;
+        }
+        if(product.cat=="almacenamiento"){
+            almacenamiento++;
+        }
+        if(product.cat=="componentes"){
+            componentes++;
+        }
+        if(product.cat=="muebles"){
+            muebles++;
+        }
+        totalstock+=product.stock;
+        PrecioInventario+=product.prec*product.stock;
     }
-    if (cuotas == 36) {
-      r7 = r * 0.45;
-      r = r + r7;
+    return {
+        total:total, activos:activos, inactivos:inactivos, porCategoria:{
+            electronica:electronica, accesorios:accesorios, audio:audio, almacenamiento:almacenamiento, componentes:componentes, muebles:muebles
+        }, totalstock:totalstock, PrecioInventario:PrecioInventario
+    };
+}
+}
+function CalculoDePrecio(precioOG, Desc1, Desc2, Desc3, AplicaIVA, CostoEnvio, cuotas) {
+    let precio=precioOG;
+    precio=AplicarDescuento(precio, Desc1);
+    precio=AplicarDescuento(precio, Desc2);
+    precio=AplicarDescuento(precio, Desc3);
+    const subtotal=precio;
+    if (AplicaIVA==true) {
+        precio=AplicarIVA(precio);
     }
-  }
-  return {
-    base: p,
-    dscto1: r2,
-    dscto2: r3,
-    dscto3: r4,
-    subtotal: r6,
-    iva: r5,
-    envio: envio,
-    totalCuota: cuotas > 1 ? r / cuotas : r,
-    total: r
-  };
+    precio+=CostoEnvio;
+    const PrecioTotal=AplicarInteresOCuotas(precio, cuotas);
+    return {
+        base:precioOG, subtotal:subtotal, envio:CostoEnvio, total:PrecioTotal, CuotaTotal:cuotas>1? PrecioTotal/cuotas:PrecioTotal
+    };
+}
+function AplicarDescuento(precio, descuento) {
+    if (descuento>0) {
+        return precio-(precio*(descuento/100));
+    }
+    return precio;
+}
+function AplicarIVA(precio) {
+    return precio+(precio*0.19);
+}
+function AplicarInteresOCuotas(precio, cuotas) {
+    let interes=0;
+    if (cuotas==2){
+        interes=0.02;
+    }
+    if (cuotas==3){
+        interes=0.04;
+    }
+    if (cuotas==6){
+        interes=0.08;
+    }
+    if (cuotas==12){
+        interes=0.15;
+    }
+    if (cuotas==24){
+        interes=0.28;
+    }
+    if (cuotas==36){
+        interes=0.45;
+    }
+    if (cuotas>1) {
+        return precio+(precio*interes);
+    }
+    return precio;
+}
+function Checkout(foundUser2, dbProducts, metodoPago, flag99, puntosGanados, orden, cb) {
+    const ResultadoDelPrecio=CalculoDePrecio(orden.precioOG, orden.Desc1, orden.Desc2, orden.Desc3, true, orden.envio, orden.cuotas);
+    orden.total=ResultadoDelPrecio.total;
+    const ResultadoDelPago=ProcesoDelPago(metodoPago, flag99);
+    if (ResultadoDelPago.ok==false) {
+        cb(ResultadoDelPago);
+        return;
+    }
+    ActualizarStock(foundUser2.carrito, dbProducts);
+    PuntosUsuario(foundUser2, puntosGanados);
+    LimpiarCarrito(foundUser2);
+    AgregarAlHistorial(foundUser2, orden);
+    orden.estado="pagado";
+    cb({ok:true, msg:"orden creada exitosamente", data:orden});  //pa actualizar this things
 }
 
 // funcion de reporte
