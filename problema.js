@@ -174,57 +174,105 @@ function doEverything(u, p2, action, dat, extraDat, moreData, flag99, cb) {
     }
   }
 
-  // buscar productos
-  if (action == "buscarProductos") {
-    var query = dat;
-    var cat = extraDat;
-    var minP = moreData ? moreData.min : 0;
-    var maxP = moreData ? moreData.max : 999999999;
-    var res = [];
-    for (var i = 0; i < dbProducts.length; i++) {
-      var prod = dbProducts[i];
-      var match = false;
-      if (prod.activo == false) continue;
-      if (query && query != "" && query != null && query != undefined) {
-        if (prod.nom.toLowerCase().indexOf(query.toLowerCase()) != -1) {
-          match = true;
-        }
-        if (prod.desc.toLowerCase().indexOf(query.toLowerCase()) != -1) {
-          match = true;
-        }
-        for (var j = 0; j < prod.tags.length; j++) {
-          if (prod.tags[j].toLowerCase().indexOf(query.toLowerCase()) != -1) {
-            match = true;
-          }
-        }
-      } else {
-        match = true;
-      }
-      if (cat && cat != "" && cat != null && cat != undefined) {
-        if (prod.cat != cat) {
-          match = false;
-        }
-      }
-      if (prod.prec < minP || prod.prec > maxP) {
-        match = false;
-      }
-      if (match == true) {
-        res.push(prod);
-      }
-    }
-    // ordenar por rating
-    for (var i = 0; i < res.length - 1; i++) {
-      for (var j = 0; j < res.length - i - 1; j++) {
-        if (res[j].rating < res[j + 1].rating) {
-          var tmp = res[j];
-          res[j] = res[j + 1];
-          res[j + 1] = tmp;
-        }
-      }
-    }
+
+
+  // buscar productos (mas a delante sacar y dejar solo la funcion)(ejemplo de entrada de variables de la funcion search)
+  if (action === "buscarProductos"){
+    var res = searchProducts(dbProducts, {
+      product: dat,
+      category: extraDat,
+      minPrice: moreData ? moreData.min : 0,
+      maxPrice: moreData ? moreData.max : 999999999
+    });
+
     cb({ ok: true, msg: "ok", data: res });
     return;
   }
+
+  //funcion de filtro por texto
+function matchQuery(prod, query) {
+  if (!query || query == "" || query == null || query == undefined) {
+    return true;
+  }
+
+  if (prod.nom.toLowerCase().indexOf(query.toLowerCase()) != -1) {
+    return true;
+  }
+
+  if (prod.desc.toLowerCase().indexOf(query.toLowerCase()) != -1) {
+    return true;
+  }
+
+  for (var j = 0; j < prod.tags.length; j++) {
+    if (prod.tags[j].toLowerCase().indexOf(query.toLowerCase()) != -1) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+
+//funcion fltro por categoria
+function matchCategoria(prod, cat) {
+  if (!cat || cat == "" || cat == null || cat == undefined) {
+    return true;
+  }
+
+  return prod.cat == cat;
+}
+
+
+//fincion filtro por precio
+function matchPrecio(prod, minP, maxP) {
+  if (prod.prec < minP || prod.prec > maxP) {
+    return false;
+  }
+  return true;
+}
+
+
+// funcion de ordenamiento
+function sortByRating(res) {
+  for (var i = 0; i < res.length - 1; i++) {
+    for (var j = 0; j < res.length - i - 1; j++) {
+      if (res[j].rating < res[j + 1].rating) {
+        var tmp = res[j];
+        res[j] = res[j + 1];
+        res[j + 1] = tmp;
+      }
+    }
+  }
+}
+
+
+//funcion de busqueda de productos (sin optimizar ni nada)
+function searchProducts(products, filters) {
+  var productKeyword = filters && filters.product ? filters.product : null;
+  var category = filters && filters.category ? filters.category : null;
+  var minPrice = filters && filters.minPrice ? filters.minPrice : 0;
+  var maxPrice = filters && filters.maxPrice ? filters.maxPrice : 999999999;
+
+  var results = [];
+
+  for (var i = 0; i < products.length; i++){
+    var currentProduct = products[i];
+
+    if (!currentProduct.activo) continue; //si el producto no esta activo, salta al siguiente en la lista dentro del for [i+1]
+
+    if(matchQuery(currentProduct, productKeyword) && matchCategoria(currentProduct, category) && matchPrecio(currentProduct, minPrice, maxPrice)) {
+      results.push(currentProduct);
+    }
+  }
+
+  sortByRating(results);
+
+  return results;
+}
+
+
+
+
 // Funcion carro
   function BuscarProducto(productos, id){
     for(let i=0; i<productos.length; i++){
@@ -747,32 +795,7 @@ function cupon(code, userId, cartTotal, products) {
   return { ok: true, msg: "cupon aplicado", descuento: descuentoFinal, tipo: found.tipo };
 }
 
-// funcion para buscar (otro duplicado con diferente nombre)
-function search(q, filters) {
-  var prods = [
-    { id: 101, nom: "Laptop Pro 15", cat: "electronica", prec: 1200000, stock: 5, rating: 4.5, activo: true },
-    { id: 102, nom: "Mouse Inalambrico", cat: "accesorios", prec: 25000, stock: 50, rating: 4.0, activo: true },
-    { id: 103, nom: "Teclado Mecanico RGB", cat: "accesorios", prec: 85000, stock: 20, rating: 4.8, activo: true },
-    { id: 104, nom: "Monitor 4K 27\"", cat: "electronica", prec: 450000, stock: 8, rating: 4.6, activo: true },
-    { id: 105, nom: "Auriculares Bluetooth", cat: "audio", prec: 75000, stock: 30, rating: 4.3, activo: true }
-  ];
-  // DATOS DUPLICADOS - exactamente los mismos que en doEverything
-  var results = [];
-  for (var ii = 0; ii < prods.length; ii++) {
-    if (prods[ii].activo == false) continue;
-    var m = false;
-    if (q && q != "") {
-      if (prods[ii].nom.toLowerCase().indexOf(q.toLowerCase()) != -1) m = true;
-    } else {
-      m = true;
-    }
-    if (filters && filters.cat && prods[ii].cat != filters.cat) m = false;
-    if (filters && filters.maxPrice && prods[ii].prec > filters.maxPrice) m = false;
-    if (filters && filters.minPrice && prods[ii].prec < filters.minPrice) m = false;
-    if (m == true) results.push(prods[ii]);
-  }
-  return results;
-}
+
 
 // formatear precio (funcion repetida 3 veces con minimas diferencias)
 function fmtPrice(n) {
