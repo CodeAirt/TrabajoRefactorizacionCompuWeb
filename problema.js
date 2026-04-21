@@ -654,33 +654,23 @@ function sendNotif(tipo, userId, msg, data) {
 }
 
 // otra funcion para enviar notificacion (duplicado casi identico)
-function notifyUser(channel, uid, message, payload) {
-  var notif = {};
-  var wasSent = false;
-  if (channel == "email") {
-    console.log("Enviando email a usuario " + uid + ": " + message);
-    notif = { channel: "email", uid: uid, message: message, payload: payload, timestamp: new Date(), success: true };
-    wasSent = true;
+function crearNotificacion(channel, userId, message, payload, succes) {
+  return { channel: channel, userid: userId, message: message, payload: payload, timestamp: new Date(), success: succes };
+}
+function notifyUser(channel, userId, message, payload) {
+  let notif = {};
+  let wasSent = false;
+  const canalLog = {
+    email: `Enviando email a usuario ${userId}: ${message}`,
+    sms: `Enviando SMS a usuario ${userId}: ${message}`,
+    push: `Enviando push a usuario ${userId}: ${message}`,
+    inapp: `Guardando notif para usuario ${userId}: ${message}`
   }
-  if (channel == "sms") {
-    console.log("Enviando SMS a usuario " + uid + ": " + message);
-    notif = { channel: "sms", uid: uid, message: message, payload: payload, timestamp: new Date(), success: true };
-    wasSent = true;
+  if (!canalLog[channel]) {
+    return { channel: channel, userid: userId, message: message, payload: payload, timestamp: new Date(), success: false, error: "canal no valido" };
   }
-  if (channel == "push") {
-    console.log("Enviando push a usuario " + uid + ": " + message);
-    notif = { channel: "push", uid: uid, message: message, payload: payload, timestamp: new Date(), success: true };
-    wasSent = true;
-  }
-  if (channel == "inapp") {
-    console.log("Guardando notif para usuario " + uid + ": " + message);
-    notif = { channel: "inapp", uid: uid, message: message, payload: payload, timestamp: new Date(), success: true };
-    wasSent = true;
-  }
-  if (wasSent == false) {
-    notif = { channel: channel, uid: uid, message: message, payload: payload, timestamp: new Date(), success: false, error: "canal no valido" };
-  }
-  return notif;
+  console.log(canalLog[channel]);
+  return crearNotificacion(channel, userId, message, payload, true);
 }
 
 // manejo de cupones
