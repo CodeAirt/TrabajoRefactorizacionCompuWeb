@@ -762,48 +762,104 @@ function mostrarPrecio(numero) {
   return "$" + numero.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
-// funcion para generar html de producto (mezcla logica con presentacion)
-function renderProduct(p) {
-  var html = "";
-  html += "<div class='product-card'>";
-  html += "<div class='product-img'>";
-  html += "<img src='" + p.imgs[0] + "' alt='" + p.nom + "'>";
-  if (p.stock <= 0) {
-    html += "<div class='badge-agotado'>AGOTADO</div>";
-  }
-  if (p.stock > 0 && p.stock <= 5) {
-    html += "<div class='badge-poco-stock'>ÚLTIMAS " + p.stock + " UNIDADES</div>";
-  }
-  html += "</div>";
-  html += "<div class='product-info'>";
-  html += "<h3>" + p.nom + "</h3>";
-  html += "<div class='rating'>";
-  // generar estrellas
-  var stars = "";
-  for (var i = 0; i < 5; i++) {
-    if (i < Math.floor(p.rating)) {
+
+
+
+function renderProduct(product, products){
+  const data = getProductViewData(product, products);
+  return renderProductHTML(data);
+}
+
+function getProductViewData(product, products){
+  const data = {};
+
+  data.id = product.id;
+  data.nombre = product.nom;
+  data.descripcion = product.desc;
+  data.precio = fmtPrice(product.prec);
+  data.categoria = product.cat;
+  data.imagen = product.imgs && product.imgs.length > 0 ? product.imgs[0] : "no-image.jpg";
+
+  //stock
+  const inventory = checkInventory(product.id, products); //llama a la funcion de chekinventory pasandole id del product y la db de productos "original"
+  const status = inventory.status;
+
+  data.sinStock = status === "Agotado";
+  data.pocoStock = status === "Critico" || status === "Bajo";
+  data.stockText = getStockText(status);
+
+  //rating
+  data.rating = product.rating;
+  data.stars = buildStars(product.rating);
+
+  //disponibilidad boton
+  data.disponible = product.activo && !data.sinStock;
+
+  return data;
+}
+
+function buildStars(rating){
+  let stars = "";
+  for (let i = 0; i < 5; i++){
+    if (i < Math.floor(rating)){
       stars += "★";
-    } else if (i < p.rating) {
-      stars += "☆";
     } else {
       stars += "☆";
     }
   }
-  html += stars;
-  html += " (" + p.rating + ")";
+  return stars;
+}
+
+function getStockText(status) {
+  if (status === "Agotado") return "Producto agotado";
+  if (status === "Critico") return "¡Últimas unidades disponibles!";
+  if (status === "Bajo") return "Quedan pocas unidades";
+  if (status === "Normal") return "Disponible";
+  if (status === "Alto") return "Stock disponible";
+  return "";
+}
+
+function renderProductHTML(data) {
+  var html = "";
+
+  html += "<div class='product-card'>";
+
+  html += "<div class='product-img'>";
+  html += "<img src='" + data.imagen + "' alt='" + data.nombre + "'>";
+
+  if (data.sinStock){
+    html += "<div class='badge-agotado'>AGOTADO</div>";
+  } else if (data.pocoStock){
+    html += "<div class='badge-poco-stock'>" + data.stockText + "</div>";
+  }
+
   html += "</div>";
-  html += "<p class='desc'>" + p.desc + "</p>";
-  html += "<div class='price'>" + fmtPrice(p.prec) + "</div>";
-  html += "<div class='category'>Categoría: " + p.cat + "</div>";
-  if (p.activo == true && p.stock > 0) {
-    html += "<button onclick='addToCart(" + p.id + ", 1)' class='btn-cart'>Agregar al carrito</button>";
+
+  html += "<div class='product-info'>";
+  html += "<h3>" + data.nombre + "</h3>";
+
+  html += "<div class='rating'>";
+  html += data.stars + " (" + data.rating + ")";
+  html += "</div>";
+
+  html += "<p class='desc'>" + data.descripcion + "</p>";
+  html += "<div class='price'>" + data.precio + "</div>";
+  html += "<div class='category'>Categoría: " + data.categoria + "</div>";
+
+  if (data.disponible){
+    html += "<button onclick='addToCart(" + data.id + ", 1)' class='btn-cart'>Agregar al carrito</button>";
   } else {
     html += "<button disabled class='btn-cart-disabled'>No disponible</button>";
   }
+
   html += "</div>";
   html += "</div>";
+
   return html;
 }
+
+
+
 
 // funcion para procesar formulario de registro (sin separacion de responsabilidades)
 function processRegistrationFormAndValidateAndSaveAndSendEmailAndLoginAndRedirect(formData) {
@@ -1054,7 +1110,7 @@ function calcShipping(destCity, weight, dimensions, prodType, isUrgent, isFree, 
 }
 
 // funcion inventario con numeros magicos
-function checkInventory(prodId4) {
+function checkInventory(prodId4, products) {
   var prods2 = [
     { id: 101, stock: 5 }, { id: 102, stock: 50 }, { id: 103, stock: 20 },
     { id: 104, stock: 8 }, { id: 105, stock: 30 }, { id: 106, stock: 15 },
