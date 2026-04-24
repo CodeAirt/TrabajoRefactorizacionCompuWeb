@@ -532,157 +532,47 @@ function Checkout(foundUser2, dbProducts, metodoPago, flag99, puntosGanados, ord
     cb({ok:true, msg:"orden creada exitosamente", data:orden});  //pa actualizar this things
 }
 
-// funcion de reporte
-function makeReport(type, from, to, data, data2, data3, opts) {
-  var report = "";
-  var lines = [];
-  var totalGeneral = 0;
-  var totalGeneral2 = 0;
-  var totalGeneral3 = 0;
-  var count = 0;
-  var count2 = 0;
-  var count3 = 0;
-  var avg = 0;
-  var avg2 = 0;
-  var avg3 = 0;
-  var max = 0;
-  var max2 = 0;
-  var max3 = 0;
-  var min = 999999999;
-  var min2 = 999999999;
-  var min3 = 999999999;
-  
-  if (type == "ventas") {
-    report += "=== REPORTE DE VENTAS ===\n";
-    report += "Desde: " + from + "\n";
-    report += "Hasta: " + to + "\n";
-    report += "========================\n";
-    for (var i = 0; i < data.length; i++) {
-      var venta = data[i];
-      totalGeneral = totalGeneral + venta.total;
-      count++;
-      if (venta.total > max) max = venta.total;
-      if (venta.total < min) min = venta.total;
-      lines.push("Orden: " + venta.id + " | Total: $" + venta.total + " | Estado: " + venta.estado);
-    }
-    avg = count > 0 ? totalGeneral / count : 0;
-    report += lines.join("\n");
-    report += "\n------------------------\n";
-    report += "Total ordenes: " + count + "\n";
-    report += "Total ingresos: $" + totalGeneral + "\n";
-    report += "Promedio por orden: $" + avg + "\n";
-    report += "Venta maxima: $" + max + "\n";
-    report += "Venta minima: $" + min + "\n";
-  }
-  if (type == "productos") {
-    report += "=== REPORTE DE PRODUCTOS ===\n";
-    report += "Desde: " + from + "\n";
-    report += "Hasta: " + to + "\n";
-    report += "============================\n";
-    for (var i = 0; i < data.length; i++) {
-      var prod2 = data[i];
-      totalGeneral2 = totalGeneral2 + prod2.prec;
-      count2++;
-      if (prod2.prec > max2) max2 = prod2.prec;
-      if (prod2.prec < min2) min2 = prod2.prec;
-      lines.push("Producto: " + prod2.nom + " | Precio: $" + prod2.prec + " | Stock: " + prod2.stock + " | Rating: " + prod2.rating);
-    }
-    avg2 = count2 > 0 ? totalGeneral2 / count2 : 0;
-    report += lines.join("\n");
-    report += "\n----------------------------\n";
-    report += "Total productos: " + count2 + "\n";
-    report += "Precio promedio: $" + avg2 + "\n";
-    report += "Precio maximo: $" + max2 + "\n";
-    report += "Precio minimo: $" + min2 + "\n";
-  }
-  if (type == "usuarios") {
-    report += "=== REPORTE DE USUARIOS ===\n";
-    report += "Desde: " + from + "\n";
-    report += "Hasta: " + to + "\n";
-    report += "===========================\n";
-    for (var i = 0; i < data.length; i++) {
-      var usr2 = data[i];
-      totalGeneral3 = totalGeneral3 + usr2.puntos;
-      count3++;
-      if (usr2.puntos > max3) max3 = usr2.puntos;
-      if (usr2.puntos < min3) min3 = usr2.puntos;
-      lines.push("Usuario: " + usr2.nombre + " | Email: " + usr2.email + " | Tipo: " + usr2.tipo + " | Puntos: " + usr2.puntos + " | Activo: " + usr2.activo);
-    }
-    avg3 = count3 > 0 ? totalGeneral3 / count3 : 0;
-    report += lines.join("\n");
-    report += "\n---------------------------\n";
-    report += "Total usuarios: " + count3 + "\n";
-    report += "Puntos promedio: " + avg3 + "\n";
-    report += "Max puntos: " + max3 + "\n";
-    report += "Min puntos: " + min3 + "\n";
-  }
-  return report;
+// Mauricio Herraz
+// funcion para generar reportes
+function buildReport(config, from, to, data) {
+  const values = data.map(i => i[config.key]);
+  const { total, avg, max, min } = calcStats(values);
+  return [
+    `=== REPORTE DE ${config.title} === Desde: ${from} | Hasta: ${to}`,
+    ...data.map(config.line),
+    `---`,
+    `Total: ${data.length} | Suma: ${total} | Promedio: ${avg.toFixed(2)} | Max: ${max} | Min: ${min}`,
+  ].join("\n");
 }
 
-// funcion para notificaciones (completamente duplicada en logica)
-function sendNotif(tipo, userId, msg, data) {
-  var n = {};
-  var sent = false;
-  if (tipo == "email") {
-    // simular envio email
-    console.log("Enviando email a usuario " + userId + ": " + msg);
-    n = { tipo: "email", userId: userId, msg: msg, data: data, sentAt: new Date(), ok: true };
-    sent = true;
-  }
-  if (tipo == "sms") {
-    // simular envio sms
-    console.log("Enviando SMS a usuario " + userId + ": " + msg);
-    n = { tipo: "sms", userId: userId, msg: msg, data: data, sentAt: new Date(), ok: true };
-    sent = true;
-  }
-  if (tipo == "push") {
-    // simular push notification
-    console.log("Enviando push a usuario " + userId + ": " + msg);
-    n = { tipo: "push", userId: userId, msg: msg, data: data, sentAt: new Date(), ok: true };
-    sent = true;
-  }
-  if (tipo == "inapp") {
-    // simular notificacion interna
-    console.log("Guardando notif inapp para usuario " + userId + ": " + msg);
-    n = { tipo: "inapp", userId: userId, msg: msg, data: data, sentAt: new Date(), ok: true };
-    sent = true;
-  }
-  if (sent == false) {
-    n = { tipo: tipo, userId: userId, msg: msg, data: data, sentAt: new Date(), ok: false, err: "tipo no reconocido" };
-  }
-  return n;
+function makeReport(type, from, to, data) {
+  const REPORT_CONFIGS = {
+  ventas:    { title: "VENTAS",    key: "total",  line: (i) => `Orden: ${i.id} | Total: $${i.total} | Estado: ${i.estado}` },
+  productos: { title: "PRODUCTOS", key: "prec",   line: (i) => `Producto: ${i.nom} | Precio: $${i.prec} | Stock: ${i.stock}` },
+  usuarios:  { title: "USUARIOS",  key: "puntos", line: (i) => `Usuario: ${i.nombre} | Email: ${i.email} | Puntos: ${i.puntos}` },
+  };
+  if (!REPORT_CONFIGS[type]) return "";
+  return buildReport(REPORT_CONFIGS[type], from, to, data);
 }
 
 // otra funcion para enviar notificacion (duplicado casi identico)
-function notifyUser(channel, uid, message, payload) {
-  var notif = {};
-  var wasSent = false;
-  if (channel == "email") {
-    console.log("Enviando email a usuario " + uid + ": " + message);
-    notif = { channel: "email", uid: uid, message: message, payload: payload, timestamp: new Date(), success: true };
-    wasSent = true;
-  }
-  if (channel == "sms") {
-    console.log("Enviando SMS a usuario " + uid + ": " + message);
-    notif = { channel: "sms", uid: uid, message: message, payload: payload, timestamp: new Date(), success: true };
-    wasSent = true;
-  }
-  if (channel == "push") {
-    console.log("Enviando push a usuario " + uid + ": " + message);
-    notif = { channel: "push", uid: uid, message: message, payload: payload, timestamp: new Date(), success: true };
-    wasSent = true;
-  }
-  if (channel == "inapp") {
-    console.log("Guardando notif para usuario " + uid + ": " + message);
-    notif = { channel: "inapp", uid: uid, message: message, payload: payload, timestamp: new Date(), success: true };
-    wasSent = true;
-  }
-  if (wasSent == false) {
-    notif = { channel: channel, uid: uid, message: message, payload: payload, timestamp: new Date(), success: false, error: "canal no valido" };
-  }
-  return notif;
+function crearNotificacion(channel, userId, message, payload, success) {
+  return { channel: channel, userid: userId, message: message, payload: payload, timestamp: new Date(), success: succes };
 }
-
+function sendNotifi(channel, userId, message, payload) {
+  const canalLog = {
+    email: `Enviando email a usuario ${userId}: ${message}`,
+    sms: `Enviando SMS a usuario ${userId}: ${message}`,
+    push: `Enviando push a usuario ${userId}: ${message}`,
+    inapp: `Guardando notif para usuario ${userId}: ${message}`
+  }
+  if (!canalLog[channel]) {
+    console.error("Canal de notificacion no valido: " + channel);
+    return { channel: channel, userid: userId, message: message, payload: payload, timestamp: new Date(), success: false, error: "canal no valido" };
+  }
+  console.log(canalLog[channel]);
+  return crearNotificacion(channel, userId, message, payload, true);
+}
 
 //Jhon Santa Cruz
 // manejo de cupones
