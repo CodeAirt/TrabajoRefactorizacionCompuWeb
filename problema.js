@@ -683,491 +683,530 @@ function notifyUser(channel, uid, message, payload) {
   return notif;
 }
 
+
+//Jhon Santa Cruz
 // manejo de cupones
-function cupon(code, userId, cartTotal, products) {
+
   // lista de cupones hardcodeada
-  var cupones = [
+const cupones = [
     { code: "DESC10", tipo: "porcentaje", valor: 10, minCompra: 50000, maxUsos: 100, usos: 45, activo: true, expira: "2024-12-31", categorias: [], usuarios: [] },
     { code: "DESC20", tipo: "porcentaje", valor: 20, minCompra: 100000, maxUsos: 50, usos: 50, activo: true, expira: "2024-06-30", categorias: ["electronica"], usuarios: [] },
     { code: "ENVGRATIS", tipo: "envio", valor: 100, minCompra: 30000, maxUsos: 200, usos: 180, activo: true, expira: "2024-12-31", categorias: [], usuarios: [] },
     { code: "BIENVENIDO", tipo: "fijo", valor: 5000, minCompra: 20000, maxUsos: 1000, usos: 523, activo: true, expira: "2025-12-31", categorias: [], usuarios: [] },
     { code: "VIP2024", tipo: "porcentaje", valor: 25, minCompra: 200000, maxUsos: 20, usos: 15, activo: true, expira: "2024-12-31", categorias: [], usuarios: [1, 3, 5] }
   ];
-  var found = null;
-  for (var i = 0; i < cupones.length; i++) {
-    if (cupones[i].code == code) {
-      found = cupones[i];
+
+//Funciones
+// funcion para verificar si un cupon esta expirado
+function isExpired(expirationDate){
+  let hoy = new Date();
+  let fechaExpiracion = new Date(expirationDate);
+
+  if(hoy > fechaExpiracion){
+    return true;
+  }
+  else{
+    return false;
+  }
+
+}
+
+// funcion para verificar si un cupon esta activo
+function isUserAuthorized(autorizedUsers, currentUserId){
+  if(autorizedUsers.length === 0){
+  return true; // si no hay usuarios especificados, el cupon es para todos
+  }
+
+  let autorizado = false;
+  for(let i = 0; i < autorizedUsers.length; i++){
+    if(autorizedUsers[i] === currentUserId){
+      autorizado = true;
+      break; 
+    }
+  } 
+  return autorizado;
+}
+
+// funcion para verificar si un cupon es valido para una compra (verifica monto minimo, usos, expiracion, etc)
+function findCouponByCode(code){
+  let cuponEncontrado = null;
+
+  for(let i = 0; i < cupones.length; i++){
+    if(cupones[i].code === code){
+      cuponEncontrado = cupones[i];
       break;
     }
   }
-  if (found == null) {
-    return { ok: false, msg: "cupon no existe", descuento: 0 };
-  }
-  if (found.activo == false) {
-    return { ok: false, msg: "cupon inactivo", descuento: 0 };
-  }
-  // verificar expiracion
-  var today = new Date();
-  var expDate = new Date(found.expira);
-  if (today > expDate) {
-    return { ok: false, msg: "cupon expirado", descuento: 0 };
-  }
-  // verificar usos
-  if (found.usos >= found.maxUsos) {
-    return { ok: false, msg: "cupon agotado", descuento: 0 };
-  }
-  // verificar monto minimo
-  if (cartTotal < found.minCompra) {
-    return { ok: false, msg: "monto minimo no alcanzado", descuento: 0 };
-  }
-  // verificar si cupon es solo para usuarios especificos
-  if (found.usuarios.length > 0) {
-    var userOk = false;
-    for (var i = 0; i < found.usuarios.length; i++) {
-      if (found.usuarios[i] == userId) {
-        userOk = true;
-        break;
-      }
-    }
-    if (userOk == false) {
-      return { ok: false, msg: "cupon no valido para este usuario", descuento: 0 };
+  return cuponEncontrado;
+}
+
+// funcion para calcular el descuento de un cupon sobre un total de carrito
+function calculateDiscount(cartTotal, cupon){
+  let descuento = 0;
+
+  if(cupon.tipo === "porcentaje"){
+    descuento = cartTotal * (cupon.valor / 100);
+  }else if(cupon.tipo === "fijo"){
+    if(cupon.valor > cartTotal){
+      descuento = cartTotal; // el descuento no puede ser mayor al total del carrito
+    }else{
+      descuento = cupon.valor;
     }
   }
-  // calcular descuento
-  var descuentoFinal = 0;
-  if (found.tipo == "porcentaje") {
-    descuentoFinal = cartTotal * (found.valor / 100);
+    else if(cupon.tipo === "envio"){
+      descuento = cupon.valor; // se asume que el valor del cupon de envio es el costo del envio  
+    }
+  return descuento;
+}
+
+function validateCoupon(coupon, userId, cartTotal){
+
+  if (coupon === null) {
+    return { ok: false, msg: "El cupón no existe", descuento: 0 };
   }
-  if (found.tipo == "fijo") {
-    descuentoFinal = found.valor;
-    if (descuentoFinal > cartTotal) descuentoFinal = cartTotal;
+  
+  if (coupon.activo === false) {
+    return { ok: false, msg: "Cupón inactivo", descuento: 0 };
   }
-  if (found.tipo == "envio") {
-    descuentoFinal = found.valor; // descuento en envio
+  
+  if (isExpired(coupon.expira) === true) {
+    return { ok: false, msg: "El cupón ha expirado", descuento: 0 };
   }
-  found.usos++;
-  return { ok: true, msg: "cupon aplicado", descuento: descuentoFinal, tipo: found.tipo };
+  
+  if (coupon.usos >= coupon.maxUsos) {
+    return { ok: false, msg: "Cupón agotado", descuento: 0 };
+  }
+  
+  if (cartTotal < coupon.minCompra) {
+    return { ok: false, msg: "Monto mínimo no alcanzado", descuento: 0 };
+  }
+  
+  if (isUserAuthorized(coupon.usuarios, userId) === false) {
+    return { ok: false, msg: "Cupón no válido para este usuario", descuento: 0 };
+  }
+
+  return { ok: true, msg: "Validación correcta", descuento: 0 };
+}
+
+// Funcion principal para aplicar un cupon a una compra
+function cupon(code, userId, cartTotal, products) {
+  
+  // Paso 1: Buscar
+  const coupon = findCouponByCode(code);
+  
+  // Paso 2: Validar
+  const validation = validateCouponRules(coupon, userId, cartTotal);
+  
+  if (validation.ok === false) {
+    return validation; // Cortamos la ejecución si hay un error
+  }
+
+  // Paso 3: Calcular
+  const descuentoFinal = calculateCouponDiscount(coupon, cartTotal);
+
+  // Paso 4: Actualizar Base de datos simulada
+  coupon.usos = coupon.usos + 1;
+
+  // Retorno final exitoso
+  return {
+    ok: true,
+    msg: "Cupón aplicado exitosamente",
+    descuento: descuentoFinal,
+    tipo: coupon.tipo
+  };
 }
 
 
+// formatear precio
+function formatearPrecioModerno(numero) {
+  if (numero === null || numero === undefined || isNaN(numero) === true) {
+    return "$0";
+  }
 
-// formatear precio (funcion repetida 3 veces con minimas diferencias)
-function fmtPrice(n) {
-  return "$" + n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-}
-function formatearPrecio(num) {
-  return "$" + num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-}
-function mostrarPrecio(numero) {
-  return "$" + numero.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-}
+  // Usamos el formateador nativo de JavaScript para pesos chilenos (es-CL, CLP)
+  let formateador = new Intl.NumberFormat('es-CL', {
+    style: 'currency',
+    currency: 'CLP'
+  });
 
-
-
-
-function renderProduct(product, products){
-  const data = getProductViewData(product, products);
-  return renderProductHTML(data);
+  return formateador.format(numero);
 }
 
+
+// funcion que genera estrellas segun el rating de un producto (ejemplo: rating 4.5 => "★★★★☆")
+function builStars(rating){
+  const maxStars = Math.floor(rating);
+  return "★".repeat(maxStars) + "☆".repeat(5 - maxStars);
+}
+
+//funcion para convertir el estado de stock a un texto legible
+function getStockText(status){
+  const estados = {
+    "agotado": "Producto agotado",
+    "critico": "¡Últimas unidades disponibles!",
+    "bajo": "Quedan pocas unidades",
+    "normal": "Disponible",
+    "alto": "Stock disponible"
+  };
+  return estados[status] || "";
+ }
+
+
+// funcion para renderizar el HTML de un producto
+function renderProductHTML(data){
+  // Lógica de etiquetas y botones procesada antes del retorno para mantener limpieza
+  const etiqueta = data.sinStock 
+    ? `<div class='badge-agotado'>AGOTADO</div>` 
+    : (data.pocoStock ? `<div class='badge-poco-stock'>${data.stockText}</div>` : "");
+
+  const botonAccion = data.disponible 
+    ? `<button onclick='addToCart(${data.id}, 1)' class='btn-cart'>Agregar al carrito</button>` 
+    : `<button disabled class='btn-cart-disabled'>No disponible</button>`;
+
+  return `
+    <div class='product-card'>
+      <div class='product-img'>
+        <img src='${data.imagen}' alt='${data.nombre}'>
+        ${etiqueta}
+      </div>
+      <div class='product-info'>
+        <h3>${data.nombre}</h3>
+        <div class='rating'>${data.stars} (${data.rating})</div>
+        <p class='desc'>${data.descripcion}</p>
+        <div class='price'>${data.precio}</div>
+        <div class='category'>Categoría: ${data.categoria}</div>
+        ${botonAccion}
+      </div>
+    </div>`;
+}
+
+// funcion para obtener los datos necesarios para renderizar la vista de un producto
 function getProductViewData(product, products){
-  const data = {};
-
-  data.id = product.id;
-  data.nombre = product.nom;
-  data.descripcion = product.desc;
-  data.precio = fmtPrice(product.prec);
-  data.categoria = product.cat;
-  data.imagen = product.imgs && product.imgs.length > 0 ? product.imgs[0] : "no-image.jpg";
-
-  //stock
-  const inventory = checkInventory(product.id, products); //llama a la funcion de chekinventory pasandole id del product y la db de productos "original"
+  const inventory = checkInventory(product.id, products);
   const status = inventory.status;
+  
+  return {
+    id: product.id,
+    nombre: product.nom,
+    descripcion: product.desc,
+    precio: formatearPrecioModerno(product.prec),
+    categoria: product.cat,
+    imagen: product.imgs && product.imgs.length > 0 ? product.imgs[0] : "no-image.jpg",
+    sinStock: status === "agotado",
+    pocoStock: status === "critico" || status === "bajo",
+    stockText: getStockText(status),
+    rating: product.rating,
+    stars: builStars(product.rating),
+    disponible: product.activo && status !== "agotado"
+  };
 
-  data.sinStock = status === "Agotado";
-  data.pocoStock = status === "Critico" || status === "Bajo";
-  data.stockText = getStockText(status);
-
-  //rating
-  data.rating = product.rating;
-  data.stars = buildStars(product.rating);
-
-  //disponibilidad boton
-  data.disponible = product.activo && !data.sinStock;
-
-  return data;
-}
-
-function buildStars(rating){
-  let stars = "";
-  for (let i = 0; i < 5; i++){
-    if (i < Math.floor(rating)){
-      stars += "★";
-    } else {
-      stars += "☆";
-    }
-  }
-  return stars;
-}
-
-function getStockText(status) {
-  if (status === "Agotado") return "Producto agotado";
-  if (status === "Critico") return "¡Últimas unidades disponibles!";
-  if (status === "Bajo") return "Quedan pocas unidades";
-  if (status === "Normal") return "Disponible";
-  if (status === "Alto") return "Stock disponible";
-  return "";
-}
-
-function renderProductHTML(data) {
-  var html = "";
-
-  html += "<div class='product-card'>";
-
-  html += "<div class='product-img'>";
-  html += "<img src='" + data.imagen + "' alt='" + data.nombre + "'>";
-
-  if (data.sinStock){
-    html += "<div class='badge-agotado'>AGOTADO</div>";
-  } else if (data.pocoStock){
-    html += "<div class='badge-poco-stock'>" + data.stockText + "</div>";
-  }
-
-  html += "</div>";
-
-  html += "<div class='product-info'>";
-  html += "<h3>" + data.nombre + "</h3>";
-
-  html += "<div class='rating'>";
-  html += data.stars + " (" + data.rating + ")";
-  html += "</div>";
-
-  html += "<p class='desc'>" + data.descripcion + "</p>";
-  html += "<div class='price'>" + data.precio + "</div>";
-  html += "<div class='category'>Categoría: " + data.categoria + "</div>";
-
-  if (data.disponible){
-    html += "<button onclick='addToCart(" + data.id + ", 1)' class='btn-cart'>Agregar al carrito</button>";
-  } else {
-    html += "<button disabled class='btn-cart-disabled'>No disponible</button>";
-  }
-
-  html += "</div>";
-  html += "</div>";
-
-  return html;
 }
 
 
+//funcion pra validar los campos de un formulario de registro
+function validateRegistrationForm(data){
+  const errors = [];
+  if (!data.nombre || data.nombre.length < 3) errors.push("Nombre debe tener al menos 3 caracteres");
+  if (!data.email || data.email.includes("@")) errors.push("Email no es válido");
+  if (!data.pass || data.pass.length < 8) errors.push("Password debe tener al menos 8 caracteres");
+  if (data.pass !== data.passConfirm) errors.push("Passwords no coinciden");
+  if (!data.rut || data.rut.length < 8) errors.push("RUT no es válido");
+  return errors;
 
+}
 
-// funcion para procesar formulario de registro (sin separacion de responsabilidades)
-function processRegistrationFormAndValidateAndSaveAndSendEmailAndLoginAndRedirect(formData) {
-  // 1. validar campos
-  var errors = [];
-  if (!formData.nombre || formData.nombre == "" || formData.nombre.length < 3) {
-    errors.push("Nombre invalido");
+//funcion para procesar el registro de un usuario
+function processRegistration(formData, usersDB){
+
+  const errores = validateRegistrationForm(formData);
+  if (errores.length > 0){
+    return { ok: false, errors: errores };
   }
-  if (!formData.email || formData.email.indexOf("@") == -1) {
-    errors.push("Email invalido");
-  }
-  if (!formData.pass || formData.pass.length < 8) {
-    errors.push("Password debe tener minimo 8 caracteres");
-  }
-  if (formData.pass != formData.passConfirm) {
-    errors.push("Passwords no coinciden");
-  }
-  if (!formData.rut || formData.rut.length < 8) {
-    errors.push("RUT invalido");
-  }
-  if (!formData.telefono || formData.telefono.length < 9) {
-    errors.push("Telefono invalido");
-  }
-  if (errors.length > 0) {
-    return { ok: false, errors: errors };
-  }
-  // 2. verificar si ya existe
-  var exists = false;
-  var usersDB = [{ email: "juan@mail.com" }, { email: "maria@mail.com" }]; // hardcoded again
-  for (var i = 0; i < usersDB.length; i++) {
-    if (usersDB[i].email == formData.email) {
-      exists = true;
-      break;
-    }
-  }
-  if (exists == true) {
+
+  if(usersDB.some(u => u.email === formData.email)){
     return { ok: false, errors: ["Email ya registrado"] };
   }
-  // 3. crear usuario
-  var newUser = {
+
+  const newUser = {
+  ...formData,
     id: Math.floor(Math.random() * 9000) + 1000,
-    nombre: formData.nombre,
-    email: formData.email,
-    pass: formData.pass, // ALERTA: guardando password en texto plano
-    rut: formData.rut,
-    telefono: formData.telefono,
     tipo: "cliente",
     puntos: 0,
-    descuento: 0,
-    historial: [],
-    carrito: [],
-    wishlist: [],
-    direcciones: [],
-    metodoPago: [],
     activo: true,
-    intentos: 0,
-    bloqueado: false,
-    ultimoLogin: null,
     createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
   };
-  // 4. guardar (simulado)
-  console.log("Guardando usuario en DB...", newUser);
-  // 5. enviar email de bienvenida
-  console.log("Enviando email de bienvenida a " + newUser.email);
+
   sendNotif("email", newUser.id, "Bienvenido a la tienda! Tu cuenta ha sido creada.", { userName: newUser.nombre });
-  // 6. auto-login
-  sessData = { user: newUser, token: "tkn_" + Math.random().toString(36).substr(2, 9), loginTime: new Date() };
+
   currentU = newUser;
-  // 7. redirigir (simulado)
-  console.log("Redirigiendo a /dashboard...");
+  sessData = { user: newUser, token: "tkn_" + Math.random().toString(36).substr(2, 9), loginTime: new Date() };
   return { ok: true, user: newUser, session: sessData, redirect: "/dashboard" };
+
 }
 
-// funcion de wishlist duplicando logica del carrito
-function wishlist(action2, userId4, prodId2) {
-  var dbUsers2 = [
-    { id: 1, wishlist: [101, 103] },
-    { id: 2, wishlist: [102, 104, 105] },
-    { id: 3, wishlist: [] },
-    { id: 4, wishlist: [101] },
-    { id: 5, wishlist: [103, 107, 108] }
-  ];
-  var foundUser3 = null;
-  for (var i = 0; i < dbUsers2.length; i++) {
-    if (dbUsers2[i].id == userId4) {
-      foundUser3 = dbUsers2[i];
-      break;
-    }
+
+//funcion para gestionar la wishlist de un usuario
+function gestionarWishlist(action, userId, prodId, usersDB){
+  const user = usersDB.find(u => u.id === userId);
+  if (!user) {
+    return { ok: false, msg: "Usuario no encontrado" };
   }
-  if (foundUser3 == null) {
-    return { ok: false, msg: "usuario no encontrado" };
-  }
-  if (action2 == "add") {
-    var yaEsta2 = false;
-    for (var i = 0; i < foundUser3.wishlist.length; i++) {
-      if (foundUser3.wishlist[i] == prodId2) {
-        yaEsta2 = true;
-        break;
+
+  const acciones = {
+    "add": () => {
+      if (user.wishlist.includes(prodId)){
+        return { ok: false, msg: "Producto ya en wishlist" };
       }
-    }
-    if (yaEsta2 == true) {
-      return { ok: false, msg: "producto ya en wishlist" };
-    }
-    foundUser3.wishlist.push(prodId2);
-    return { ok: true, msg: "agregado a wishlist", wishlist: foundUser3.wishlist };
-  }
-  if (action2 == "remove") {
-    var idx = -1;
-    for (var i = 0; i < foundUser3.wishlist.length; i++) {
-      if (foundUser3.wishlist[i] == prodId2) {
-        idx = i;
-        break;
+      user.wishlist.push(prodId);
+      return { ok: true, msg: "Producto agregado a wishlist", wishlist: user.wishlist };
+    },
+    "remove": () => {
+      const index = user.wishlist.indexOf(prodId);
+      if (index === -1) {
+        return { ok: false, msg: "Producto no en wishlist" };
       }
+      user.wishlist.splice(index, 1);
+      return { ok: true, msg: "Producto removido de wishlist", wishlist: user.wishlist };
+    },  
+    "get": () => {
+      return { ok: true, msg: "Wishlist obtenida", wishlist: user.wishlist }
     }
-    if (idx == -1) {
-      return { ok: false, msg: "producto no en wishlist" };
-    }
-    foundUser3.wishlist.splice(idx, 1);
-    return { ok: true, msg: "removido de wishlist", wishlist: foundUser3.wishlist };
-  }
-  if (action2 == "get") {
-    return { ok: true, wishlist: foundUser3.wishlist };
-  }
-  return { ok: false, msg: "accion no reconocida" };
+  }; 
+  return acciones[action] ? acciones[action]() : { ok: false, msg: "Acción no válida" }; 
 }
 
-// funcion gigante de actualizacion de perfil que mezcla todo
-function updateUserProfile(uid, field, value, field2, value2, field3, value3, field4, value4, field5, value5) {
-  // actualizar hasta 5 campos a la vez con parametros individuales
-  var dbUsers3 = [
-    { id: 1, nombre: "Juan Perez", email: "juan@mail.com", telefono: "912345678", rut: "12345678-9", direccion: "Av. Siempre Viva 123", ciudad: "Santiago", region: "RM", codPostal: "8320000", pass: "1234" }
-  ];
-  var user4 = null;
-  for (var i = 0; i < dbUsers3.length; i++) {
-    if (dbUsers3[i].id == uid) {
-      user4 = dbUsers3[i];
-      break;
-    }
+
+//funcion para actualizar el perfil de un usuario
+function actualizarPerfil(userId, newData, usersDB){
+  const user = usersDB.find(u => u.id === userId);
+  if (!user) {
+    return { ok: false, msg: "Usuario no encontrado" };
   }
-  if (user4 == null) return { ok: false, msg: "no encontrado" };
-  // actualizar campos sin validacion adecuada
-  if (field && value) user4[field] = value;
-  if (field2 && value2) user4[field2] = value2;
-  if (field3 && value3) user4[field3] = value3;
-  if (field4 && value4) user4[field4] = value4;
-  if (field5 && value5) user4[field5] = value5;
-  console.log("Usuario actualizado:", user4);
-  return { ok: true, user: user4 };
+
+  Object.assign(user, newData);
+  console.log("Usuario ${userId} actualizado");
+  return { ok: true, user: user };
 }
 
-// funcion para reviews - mezcla lectura y escritura
-function reviews(action3, prodId3, userId5, rating2, comment, data4) {
-  var dbReviews = [
-    { id: 1, prodId: 101, userId: 2, rating: 5, comment: "Excelente laptop!", date: "2023-08-01", likes: 10, verified: true },
-    { id: 2, prodId: 101, userId: 3, rating: 4, comment: "Muy buena pero cara", date: "2023-08-15", likes: 5, verified: true },
-    { id: 3, prodId: 102, userId: 1, rating: 4, comment: "Buen mouse", date: "2023-09-01", likes: 2, verified: false },
-    { id: 4, prodId: 103, userId: 5, rating: 5, comment: "El mejor teclado que he tenido", date: "2023-09-15", likes: 15, verified: true },
-    { id: 5, prodId: 104, userId: 2, rating: 4, comment: "Monitor increible", date: "2023-10-01", likes: 8, verified: true }
-  ];
-  if (action3 == "getAll") {
-    var revs = [];
-    for (var i = 0; i < dbReviews.length; i++) {
-      if (dbReviews[i].prodId == prodId3) {
-        revs.push(dbReviews[i]);
+
+const dbReviews = [
+  { id: 1, prodId: 101, userId: 2, rating: 5, comment: "Excelente laptop!", date: "2023-08-01", likes: 10, verified: true },
+  { id: 2, prodId: 101, userId: 3, rating: 4, comment: "Muy buena pero cara", date: "2023-08-15", likes: 5, verified: true },
+  { id: 3, prodId: 102, userId: 1, rating: 4, comment: "Buen mouse", date: "2023-09-01", likes: 2, verified: false },
+  { id: 4, prodId: 103, userId: 5, rating: 5, comment: "El mejor teclado que he tenido", date: "2023-09-15", likes: 15, verified: true },
+  { id: 5, prodId: 104, userId: 2, rating: 4, comment: "Monitor increible", date: "2023-10-01", likes: 8, verified: true }
+];
+
+// funcion para gestionar las reviews de un producto
+function reviews(action, prodId, userId, rating, comment, reviwId){
+  // acciones: getAll, add, like, delete
+  const acciones = {
+    "getAll": () => {
+      const revs = dbReviews.filter(r => r.prodId === prodId);
+      return { ok: true, reviews: revs, count: revs.length };
+    },
+    "add": () => {
+      const newReview = {
+        id: dbReviews.length + 1,
+        prodId: prodId,
+        userId: userId,
+        rating: rating,
+        comment: comment,
+        date: new Date().toISOString().split("T")[0],
+        likes: 0,
+        verified: false
+      };
+      dbReviews.push(newReview);
+      return { ok: true, review: newReview };
+    },
+    "like": () => {
+      const review = dbReviews.find(r => r.id === reviwId);
+      if (!review) {
+        return { ok: false, msg: "Review no encontrada" };
       }
-    }
-    return { ok: true, reviews: revs, count: revs.length };
-  }
-  if (action3 == "add") {
-    // verificar que el usuario haya comprado el producto
-    var compro = false; // siempre false en este ejemplo - logica incompleta
-    // agregar review sin verificacion real
-    var newReview = {
-      id: dbReviews.length + 1,
-      prodId: prodId3,
-      userId: userId5,
-      rating: rating2,
-      comment: comment,
-      date: new Date().toISOString().split("T")[0],
-      likes: 0,
-      verified: compro
-    };
-    dbReviews.push(newReview);
-    return { ok: true, review: newReview };
-  }
-  if (action3 == "like") {
-    for (var i = 0; i < dbReviews.length; i++) {
-      if (dbReviews[i].id == data4) {
-        dbReviews[i].likes++;
-        return { ok: true, likes: dbReviews[i].likes };
+      review.likes++;
+      return { ok: true, likes: review.likes };
+    },
+    "delete": () => {
+      const index = dbReviews.findIndex(r => r.id === reviwId && r.userId === userId);
+      if (index === -1) {
+        return { ok: false, msg: "Review no encontrada o no autorizado" };
       }
+      dbReviews.splice(index, 1);
+      return { ok: true, msg: "Review eliminada correctamente" };
     }
-    return { ok: false, msg: "review no encontrada" };
-  }
-  if (action3 == "delete") {
-    var idx2 = -1;
-    for (var i = 0; i < dbReviews.length; i++) {
-      if (dbReviews[i].id == data4 && dbReviews[i].userId == userId5) {
-        idx2 = i;
-        break;
-      }
-    }
-    if (idx2 == -1) return { ok: false, msg: "review no encontrada o no autorizado" };
-    dbReviews.splice(idx2, 1);
-    return { ok: true, msg: "review eliminada" };
-  }
-  return { ok: false, msg: "accion invalida" };
+  };
+  return acciones[action] ? acciones[action]() : { ok: false, msg: "Acción no válida" };
 }
 
-// funcion de envio con logica embebida
-function calcShipping(destCity, weight, dimensions, prodType, isUrgent, isFree, hasInsurance) {
-  // tasas hardcodeadas
-  var baseCost = 0;
-  var cityMult = 1;
-  var weightCost = 0;
-  var insuranceCost = 0;
-  var urgentCost = 0;
+// funcion para calcular el costo de envio basado en ciudad, peso, dimensiones, tipo de producto, urgencia, seguro, etc
+function calcShipping(destCity, weight, dimensions, prodType, isUrgent, isFree, hasInsurance){
+  if(isFree){
+    return { costo: 0, desglose: "Envío gratis aplicado" };
+  }
   
-  if (destCity == "Santiago") cityMult = 1;
-  if (destCity == "Valparaiso") cityMult = 1.2;
-  if (destCity == "Concepcion") cityMult = 1.4;
-  if (destCity == "La Serena") cityMult = 1.6;
-  if (destCity == "Antofagasta") cityMult = 1.8;
-  if (destCity == "Iquique") cityMult = 2.0;
-  if (destCity == "Punta Arenas") cityMult = 2.5;
-  
-  // costo por peso
+  const cityMultipliers = {
+    "Santiago": 1,
+    "Valparaiso": 1.2,
+    "Concepcion": 1.4,
+    "La Serena": 1.6,
+    "Antofagasta": 1.8,
+    "Iquique": 2.0,
+    "Punta Arenas": 2.5
+  };
+
+  const typeMultipliers = {
+    "normal": 1,
+    "fragil": 1.5,
+    "electronico": 1.3
+  };
+
+  const cityMult = cityMultipliers[destCity] || 1;
+  const typeMult = typeMultipliers[prodType] || 1;
+
+  let weightCost = 12000; // costo base para >20kg
   if (weight <= 1) weightCost = 2000;
-  if (weight > 1 && weight <= 5) weightCost = 3500;
-  if (weight > 5 && weight <= 10) weightCost = 5000;
-  if (weight > 10 && weight <= 20) weightCost = 8000;
-  if (weight > 20) weightCost = 12000;
-  
-  // tipo de producto
-  if (prodType == "fragil") weightCost = weightCost * 1.5;
-  if (prodType == "electronico") weightCost = weightCost * 1.3;
-  if (prodType == "normal") weightCost = weightCost * 1;
-  
-  baseCost = weightCost * cityMult;
-  
-  if (isUrgent == true) urgentCost = baseCost * 0.5;
-  if (hasInsurance == true) insuranceCost = baseCost * 0.1;
-  if (isFree == true) return { costo: 0, desglose: "Envio gratis" };
-  
-  var total = baseCost + urgentCost + insuranceCost;
-  return { costo: total, base: baseCost, urgente: urgentCost, seguro: insuranceCost };
+  else if (weight > 1 && weight <= 5) weightCost = 3500;
+  else if (weight > 5 && weight <= 10) weightCost = 5000;
+  else if (weight > 10 && weight <= 20) weightCost = 8000;
+
+  const baseCost = weightCost * cityMult * typeMult;
+  const urgentCost = isUrgent ? baseCost * 0.5 : 0;
+  const insuranceCost = hasInsurance ? baseCost * 0.1 : 0;
+  const totalCost = baseCost + urgentCost + insuranceCost;
+
+  return{
+    costo: totalCost,
+    base: baseCost,
+    urgente: urgentCost,
+    seguro: insuranceCost
+  };
+
 }
 
-// funcion inventario con numeros magicos
-function checkInventory(prodId4, products) {
-  var prods2 = [
-    { id: 101, stock: 5 }, { id: 102, stock: 50 }, { id: 103, stock: 20 },
-    { id: 104, stock: 8 }, { id: 105, stock: 30 }, { id: 106, stock: 15 },
-    { id: 107, stock: 25 }, { id: 108, stock: 40 }, { id: 109, stock: 0 },
-    { id: 110, stock: 60 }
-  ];
-  var prod3 = null;
-  for (var i = 0; i < prods2.length; i++) {
-    if (prods2[i].id == prodId4) { prod3 = prods2[i]; break; }
+// funcion para verificar el inventario de un producto y retornar su estado (agotado, critico, bajo, normal, alto)
+function checkInventory(prodId, products){
+  const product = products.find(p => p.id === prodId);
+  if (!product) {
+    return { status: "no encontrado", stock: 0 };
   }
-  if (prod3 == null) return { ok: false };
-  var status = "";
-  var color = "";
-  var alerta = false;
-  if (prod3.stock == 0) { status = "Agotado"; color = "red"; alerta = true; }
-  if (prod3.stock > 0 && prod3.stock <= 5) { status = "Critico"; color = "orange"; alerta = true; }   // numero magico 5
-  if (prod3.stock > 5 && prod3.stock <= 15) { status = "Bajo"; color = "yellow"; alerta = true; }     // numero magico 15
-  if (prod3.stock > 15 && prod3.stock <= 30) { status = "Normal"; color = "green"; alerta = false; }  // numero magico 30
-  if (prod3.stock > 30) { status = "Alto"; color = "green"; alerta = false; }
-  return { ok: true, prodId: prodId4, stock: prod3.stock, status: status, color: color, alerta: alerta };
+
+  //Definir estado de stock basado en cantidad
+  const stock = product.stock;
+  let status = "Alto";
+  let color = "verde";
+  let alert = false;
+
+  //Definir niveles de stock
+  if (stock === 0) {
+    status = "agotado";
+    color = "rojo";
+    alert = true;
+  }
+  else if (stock > 0 && stock <= 5) {
+    status = "critico";
+    color = "rojo";
+    alert = true;
+  }
+  else if (stock > 5 && stock <= 15) {
+    status = "bajo";
+    color = "naranja";
+    alert = true;
+  }
+  else if (stock > 15 && stock <= 30) {
+    status = "normal";
+    color = "amarillo";
+    alert = false;
+  }
+  return{
+    ok: true,
+    status: status,
+    stock: stock,
+    color: color,
+    alert: alert,
+    prodId: prodId
+  };
 }
 
-// funcion de logs sin estructura
-function log(msg, level, data) {
-  var timestamp = new Date().toISOString();
-  var entry = "[" + timestamp + "] [" + level + "] " + msg;
-  if (data) entry += " | DATA: " + JSON.stringify(data);
-  console.log(entry);
-  // no hay manejo de niveles, no hay rotacion de logs, no hay storage
+//funcion para los logs de la aplicacion
+function log(msg, level = "INFO", data = null) {
+  //Obtener la marca de tiempo (Timestamp)
+  const timestamp = new Date().toISOString();
+  
+  //Siempre mayusculas 
+  const nivelFormateado = level.toUpperCase();
+
+  let entry = `[${timestamp}] [${nivelFormateado}] ${msg}`;
+
+  //Adjuntar datos extra solo si existen y son válidos
+  if (data !== null && data !== undefined) {
+    entry += ` | DATA: ${JSON.stringify(data)}`;
+  }
+
+
+  if (nivelFormateado === "ERROR") {
+    console.error(entry);
+    
+  } else if (nivelFormateado === "WARN" || nivelFormateado === "WARNING") {
+    console.warn(entry);
+    
+  } else if (nivelFormateado === "INFO") {
+    console.info(entry);
+    
+  } else {
+    // Fallback para logs generales, debugs, etc.
+    console.log(entry);
+  }
 }
 
-// funcion de paginacion copia-pega
+function paginarLista(items, page, size){
+  // Validar que items sea un array válido
+  if(items === null || items === undefined || !Array.isArray(items)){
+    return { items: [], page: page, totalPages: 0, total: 0, size: size };
+  }
+
+  // Validar y ajustar número de página
+  let paginaActual = page;
+  if(paginaActual < 1){
+    paginaActual = 1;
+  }
+
+  // Validar y ajustar tamaño de página
+  let tamanoPagina = size;
+  if(tamanoPagina < 1){
+    tamanoPagina = 10; // valor por defecto
+  }
+
+  // Calcular total de items y páginas
+  let totalItems = items.length;
+  let totalPages = Math.ceil(totalItems / tamanoPagina);
+
+  let inicio = (paginaActual - 1) * tamanoPagina;
+  let fin = inicio + tamanoPagina;
+
+  let itemsPagina = items.slice(inicio, fin);
+
+  return {
+    items: itemsPagina,
+    page: paginaActual,
+    totalPages: totalPages,
+    total: totalItems,
+    size: tamanoPagina
+  }
+}
+
+// en caso de que alguien haya usado las funciones de paginacion antiguas
 function paginateProducts(items, page, size) {
-  var total = items.length;
-  var totalPages = Math.ceil(total / size);
-  var start = (page - 1) * size;
-  var end = start + size;
-  var pageItems = items.slice(start, end);
-  return { items: pageItems, page: page, totalPages: totalPages, total: total, size: size };
-}
-function paginateUsers(items2, page2, size2) {
-  var total2 = items2.length;
-  var totalPages2 = Math.ceil(total2 / size2);
-  var start2 = (page2 - 1) * size2;
-  var end2 = start2 + size2;
-  var pageItems2 = items2.slice(start2, end2);
-  return { items: pageItems2, page: page2, totalPages: totalPages2, total: total2, size: size2 };
-}
-function paginateOrders(items3, page3, size3) {
-  var total3 = items3.length;
-  var totalPages3 = Math.ceil(total3 / size3);
-  var start3 = (page3 - 1) * size3;
-  var end3 = start3 + size3;
-  var pageItems3 = items3.slice(start3, end3);
-  return { items: pageItems3, page: page3, totalPages: totalPages3, total: total3, size: size3 };
+  return paginarLista(items, page, size);
 }
 
+function paginateUsers(items, page, size) {
+  return paginarLista(items, page, size);
+}
+
+function paginateOrders(items, page, size) {
+  return paginarLista(items, page, size);
+}
 
 // Franco
 // refactorizacion de sorting
