@@ -31,7 +31,7 @@ var response;
 
 var err;
 
-function doEverything(u, p2, action, dat, extraDat, moreData, flag99, cb) {
+function doEverything(u, p2, action, searchText, category, priceRange, flag99, cb) {
 
 
   let isOk = false;
@@ -39,21 +39,32 @@ function doEverything(u, p2, action, dat, extraDat, moreData, flag99, cb) {
   let tempUser = null;
 
   const dbUsers = [
-    { id: 1, nombre: "Juan Perez", email: "juan@mail.com", pass: "1234", tipo: "admin", puntos: 150, descuento: 0, historial: [], carrito: [], wishlist: [], direcciones: [], metodoPago: [], activo: true, intentos: 0, bloqueado: false, ultimoLogin: null, createdAt: "2023-01-01", updatedAt: "2023-06-01" },
-    { id: 2, nombre: "Maria Lopez", email: "maria@mail.com", pass: "abcd", tipo: "cliente", puntos: 80, descuento: 5, historial: [], carrito: [], wishlist: [], direcciones: [], metodoPago: [], activo: true, intentos: 0, bloqueado: false, ultimoLogin: null, createdAt: "2023-02-01", updatedAt: "2023-06-15" },
-    { id: 3, nombre: "Pedro Gonzalez", email: "pedro@mail.com", pass: "pass123", tipo: "vendedor", puntos: 200, descuento: 10, historial: [], carrito: [], wishlist: [], direcciones: [], metodoPago: [], activo: true, intentos: 0, bloqueado: false, ultimoLogin: null, createdAt: "2023-03-01", updatedAt: "2023-07-01" },
-    { id: 4, nombre: "Ana Martinez", email: "ana@mail.com", pass: "ana2024", tipo: "cliente", puntos: 50, descuento: 0, historial: [], carrito: [], wishlist: [], direcciones: [], metodoPago: [], activo: false, intentos: 3, bloqueado: true, ultimoLogin: null, createdAt: "2023-04-01", updatedAt: "2023-07-10" },
-    { id: 5, nombre: "Carlos Ruiz", email: "carlos@mail.com", pass: "carlos99", tipo: "cliente", puntos: 300, descuento: 15, historial: [], carrito: [], wishlist: [], direcciones: [], metodoPago: [], activo: true, intentos: 0, bloqueado: false, ultimoLogin: null, createdAt: "2023-05-01", updatedAt: "2023-08-01" }
+    { id: 1, nombre: "Juan Perez", email: "juan@mail.com", password: "1234", tipoCuenta: "admin", puntos: 150, descuento: 0, historial: [], carrito: [], wishlist: [], direcciones: [], metodoPago: [], activo: true, intentos: 0, bloqueado: false, ultimoLogin: null, createdAt: "2023-01-01", updatedAt: "2023-06-01" },
+    { id: 2, nombre: "Maria Lopez", email: "maria@mail.com", password: "abcd", tipoCuenta: "cliente", puntos: 80, descuento: 5, historial: [], carrito: [], wishlist: [], direcciones: [], metodoPago: [], activo: true, intentos: 0, bloqueado: false, ultimoLogin: null, createdAt: "2023-02-01", updatedAt: "2023-06-15" },
+    { id: 3, nombre: "Pedro Gonzalez", email: "pedro@mail.com", password: "pass123", tipoCuenta: "vendedor", puntos: 200, descuento: 10, historial: [], carrito: [], wishlist: [], direcciones: [], metodoPago: [], activo: true, intentos: 0, bloqueado: false, ultimoLogin: null, createdAt: "2023-03-01", updatedAt: "2023-07-01" },
+    { id: 4, nombre: "Ana Martinez", email: "ana@mail.com", password: "ana2024", tipoCuenta: "cliente", puntos: 50, descuento: 0, historial: [], carrito: [], wishlist: [], direcciones: [], metodoPago: [], activo: false, intentos: 3, bloqueado: true, ultimoLogin: null, createdAt: "2023-04-01", updatedAt: "2023-07-10" },
+    { id: 5, nombre: "Carlos Ruiz", email: "carlos@mail.com", password: "carlos99", tipoCuenta: "cliente", puntos: 300, descuento: 15, historial: [], carrito: [], wishlist: [], direcciones: [], metodoPago: [], activo: true, intentos: 0, bloqueado: false, ultimoLogin: null, createdAt: "2023-05-01", updatedAt: "2023-08-01" }
   ];
 
-  const dbProducts = [/* igual que antes */];
+  const dbProducts = [
+    { id: 101, nombreProduct: "Laptop Pro 15", categoria: "electronica", precio: 1200000, stock: 5, desc: "Laptop de alto rendimiento", rating: 4.5, reviews: [], vendedor: 3, imgs: ["img1.jpg", "img2.jpg"], tags: ["laptop", "computador", "pro"], activo: true, createdAt: "2023-01-15" },
+    { id: 102, nombreProduct: "Mouse Inalambrico", categoria: "accesorios", precio: 25000, stock: 50, desc: "Mouse ergonomico inalambrico", rating: 4.0, reviews: [], vendedor: 3, imgs: ["img3.jpg"], tags: ["mouse", "inalambrico"], activo: true, createdAt: "2023-01-20" },
+    { id: 103, nombreProduct: "Teclado Mecanico RGB", categoria: "accesorios", precio: 85000, stock: 20, desc: "Teclado mecanico con iluminacion RGB", rating: 4.8, reviews: [], vendedor: 3, imgs: ["img4.jpg", "img5.jpg"], tags: ["teclado", "mecanico", "rgb"], activo: true, createdAt: "2023-02-01" },
+    { id: 104, nombreProduct: "Monitor 4K 27\"", categoria: "electronica", precio: 450000, stock: 8, desc: "Monitor 4K con HDR", rating: 4.6, reviews: [], vendedor: 3, imgs: ["img6.jpg"], tags: ["monitor", "4k"], activo: true, createdAt: "2023-02-15" },
+    { id: 105, nombreProduct: "Auriculares Bluetooth", categoria: "audio", precio: 75000, stock: 30, desc: "Auriculares con cancelacion de ruido", rating: 4.3, reviews: [], vendedor: 3, imgs: ["img7.jpg"], tags: ["auriculares", "bluetooth"], activo: true, createdAt: "2023-03-01" },
+    { id: 106, nombreProduct: "Webcam HD 1080p", categoria: "accesorios", precio: 45000, stock: 15, desc: "Webcam para videoconferencias", rating: 4.1, reviews: [], vendedor: 3, imgs: ["img8.jpg"], tags: ["webcam", "camara"], activo: true, createdAt: "2023-03-15" },
+    { id: 107, nombreProduct: "SSD 1TB", categoria: "almacenamiento", precio: 95000, stock: 25, desc: "SSD de alta velocidad", rating: 4.7, reviews: [], vendedor: 3, imgs: ["img9.jpg"], tags: ["ssd", "almacenamiento"], activo: true, createdAt: "2023-04-01" },
+    { id: 108, nombreProduct: "Memoria RAM 16GB", categoria: "componentes", precio: 65000, stock: 40, desc: "RAM DDR4 3200MHz", rating: 4.4, reviews: [], vendedor: 3, imgs: ["img10.jpg"], tags: ["ram", "memoria"], activo: true, createdAt: "2023-04-15" },
+    { id: 109, nombreProduct: "Silla Gamer", categoria: "muebles", precio: 350000, stock: 10, desc: "Silla ergonomica para gaming", rating: 4.2, reviews: [], vendedor: 3, imgs: ["img11.jpg"], tags: ["silla", "gamer"], activo: false, createdAt: "2023-05-01" },
+    { id: 110, nombreProduct: "Hub USB-C 7 en 1", categoria: "accesorios", precio: 38000, stock: 60, desc: "Hub multipuerto USB-C", rating: 3.9, reviews: [], vendedor: 3, imgs: ["img12.jpg"], tags: ["hub", "usb"], activo: true, createdAt: "2023-05-15" }
+  ];
 
   
   if (action === "login") {
 
     //buscar usuario (más limpio)
     for (let i = 0; i < dbUsers.length; i++) {
-      if (dbUsers[i].email === u && dbUsers[i].pass === p2) {
+      if (dbUsers[i].email === u && dbUsers[i].password === p2) {
         tempUser = dbUsers[i];
         isOk = true;
         break;
@@ -115,127 +126,97 @@ function doEverything(u, p2, action, dat, extraDat, moreData, flag99, cb) {
     }
   }
 
-
+  // buscar productos (mas a delante sacar y dejar solo la funcion)(ejemplo de entrada de variables de la funcion search)
   if (action === "buscarProductos"){
-    var res = searchProducts(dbProducts, {
-      product: dat,
-      category: extraDat,
-      minPrice: moreData ? moreData.min : 0,
-      maxPrice: moreData ? moreData.max : 999999999
-    });
+    const filters = {
+      searchText: searchText || undefined,
+      category: category || undefined,
+      minPrice: priceRange?.min ?? undefined,
+      maxPrice: priceRange?.max ?? undefined
+    };
 
-    cb({ ok: true, msg: "ok", data: res });
-    return;
+    const filteredProducts = searchProducts(dbProducts, filters);
+
+    if(filteredProducts.length === 0){
+      return cb({ ok: true, msg: "no se encontraron productos", data: [] });
+    }
+
+    return cb({ 
+      ok: true,
+      msg: `se encontraron ${filteredProducts.length} productos`,
+      data: filteredProducts 
+    });
   }
 }
 
 
-  // buscar productos (mas a delante sacar y dejar solo la funcion)(ejemplo de entrada de variables de la funcion search)
-  if (action === "buscarProductos"){
-    var res = searchProducts(dbProducts, {
-      product: dat,
-      category: extraDat,
-      minPrice: moreData ? moreData.min : 0,
-      maxPrice: moreData ? moreData.max : 999999999
-    });
+//funcion de filtro por texto
+function matchText(product, searchText){
+  if (!searchText) return true;
 
-    cb({ ok: true, msg: "ok", data: res });
-    return;
-  }
+  const search = searchText.trim().toLowerCase(); //trim elimina espacios antes y despues, tolowercase busqueda sin importar mayus o minus
 
-  //funcion de filtro por texto
-function matchQuery(prod, query) {
-  if (!query || query == "" || query == null || query == undefined) {
-    return true;
-  }
+  const nameMatch = (product.nombreProduct || "").toLowerCase().includes(search);
+  const descriptionMatch = (product.desc || "").toLowerCase().includes(search);
+  const tagsMatch = (product.tags || []).some(tag => (tag || "").toLowerCase().includes(search)); //.some devuelve true si al menos un tag coincide con la busqueda
 
-  if (prod.nom.toLowerCase().indexOf(query.toLowerCase()) != -1) {
-    return true;
-  }
-
-  if (prod.desc.toLowerCase().indexOf(query.toLowerCase()) != -1) {
-    return true;
-  }
-
-  for (var j = 0; j < prod.tags.length; j++) {
-    if (prod.tags[j].toLowerCase().indexOf(query.toLowerCase()) != -1) {
-      return true;
-    }
-  }
-
-  return false;
+  return nameMatch || descriptionMatch || tagsMatch;
 }
 
 
 //funcion fltro por categoria
-function matchCategoria(prod, cat) {
-  if (!cat || cat == "" || cat == null || cat == undefined) {
-    return true;
-  }
+function matchCategoria(product, category){
+  if (!category) return true;
 
-  return prod.cat == cat;
+  return product.categoria.toLowerCase() === category.toLowerCase(); // ej. Electronica = electronica
 }
 
 
 //fincion filtro por precio
-function matchPrecio(prod, minP, maxP) {
-  if (prod.prec < minP || prod.prec > maxP) {
-    return false;
-  }
-  return true;
+function matchPrecio(product, minPrice, maxPrice){
+  const price = product.precio;
+
+  const min = minPrice ?? 0;
+  const max = maxPrice ?? Infinity;
+
+  return price >= min && price <= max;
 }
 
 
-// funcion de ordenamiento
-function sortByRating(res) {
-  for (var i = 0; i < res.length - 1; i++) {
-    for (var j = 0; j < res.length - i - 1; j++) {
-      if (res[j].rating < res[j + 1].rating) {
-        var tmp = res[j];
-        res[j] = res[j + 1];
-        res[j + 1] = tmp;
-      }
-    }
-  }
+// funcion de ordenamiento por rating (de mayor a menor) (podria convertirse en una funcion de ordenamiento general y pasarle el campo por parametro, pero por ahora asi queda)
+function sortByRating(result){
+  result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
 }
 
 
-//funcion de busqueda de productos (sin optimizar ni nada)
-function searchProducts(products, filters) {
-  var productKeyword = filters && filters.product ? filters.product : null;
-  var category = filters && filters.category ? filters.category : null;
-  var minPrice = filters && filters.minPrice ? filters.minPrice : 0;
-  var maxPrice = filters && filters.maxPrice ? filters.maxPrice : 999999999;
+//funcion busqueda de productos
+function searchProducts(products, filters = {}){
+  const {
+    searchText = null,
+    category = null,
+    minPrice = 0,
+    maxPrice = Infinity
+  } = filters;
 
-  var results = [];
+  const filteredProducts = products.filter(currentProduct => currentProduct.activo &&
+    matchText(currentProduct, searchText) &&
+    matchCategoria(currentProduct, category) &&
+    matchPrecio(currentProduct, minPrice, maxPrice)
+  );
 
-  for (var i = 0; i < products.length; i++){
-    var currentProduct = products[i];
+  sortByRating(filteredProducts);
 
-    if (!currentProduct.activo) continue; //si el producto no esta activo, salta al siguiente en la lista dentro del for [i+1]
-
-    if(matchQuery(currentProduct, productKeyword) && matchCategoria(currentProduct, category) && matchPrecio(currentProduct, minPrice, maxPrice)) {
-      results.push(currentProduct);
-    }
-  }
-
-  sortByRating(results);
-
-  return results;
+  return filteredProducts;
 }
 
 
 
 
 // Funcion carro
-  function BuscarProducto(productos, id){
-    for(let i=0; i<productos.length; i++){
-        if(productos[i].id==id){
-            return productos[i];
-        }
-    }
-    return false;
+function findProductById(products, id){
+  return products.find(currentProduct => currentProduct.id === id) || null;
 }
+
 function BuscarUsuario(usuarios, id){
     for(let i=0; i<usuarios.length; i++){
         if(usuarios[i].id==id){
@@ -266,7 +247,7 @@ function CalcularTotalCarrito(carrito, productos){
     for(let i=0; i<carrito.length; i++){
         for(let j=0; j<productos.length; j++){
             if(productos[j].id==carrito[i].prodId){
-                total+=productos[j].prec*carrito[i].cantidad;
+                total+=productos[j].precio*carrito[i].cantidad;
                 break;
             }
         }
@@ -274,7 +255,7 @@ function CalcularTotalCarrito(carrito, productos){
     return total;
 }
 function AddCart(dbProducts, dbUsers, prodId, cantidad, userId, cb){
-    const producto=BuscarProducto(dbProducts, prodId);
+    const producto=findProductById(dbProducts, prodId);
     const usuario=BuscarUsuario(dbUsers, userId);
     if(producto==false){
         cb({ok:false, msg:"producto no encontrado", data:false});
@@ -306,12 +287,12 @@ function CalcularItemsYSubtotal(carrito, productos){
     for(let i=0; i<carrito.length; i++){
         for(let j=0; j<productos.length; j++){
             if(productos[j].id==carrito[i].prodId){
-                const totalItem=productos[j].prec*carrito[i].cantidad;
+                const totalItem=productos[j].precio*carrito[i].cantidad;
                 subtotal+=totalItem;
                 items.push({
-                    prod: productos[j].nom,
+                    prod: productos[j].nombreProduct,
                     cantidad: carrito[i].cantidad,
-                    precUnit: productos[j].prec,
+                    precUnit: productos[j].precio,
                     totalItem: totalItem
                 });
                 break;
@@ -404,13 +385,13 @@ function getstatsUsuarios(usuarios){
         if (people.bloqueado==true){
             bloqueados++;
         }
-        if (people.tipo=="admin"){
+        if (people.tipoCuenta=="admin"){
             admin++;
         }
-        if (people.tipo=="cliente"){
+        if (people.tipoCuenta=="cliente"){
             clientes++;
         }
-        if (people.tipo=="vendedor"){
+        if (people.tipoCuenta=="vendedor"){
            vendedores++; 
         }
     }
@@ -439,26 +420,26 @@ function getstatsProductos(productos){
         if(product.activo==false){
             inactivos++;
         }
-        if(product.cat=="electronica"){
+        if(product.categoria=="electronica"){
             electronica++;
         }
-        if(product.cat=="accesorios"){
+        if(product.categoria=="accesorios"){
             accesorios++;
         }
-        if(product.cat=="audio"){
+        if(product.categoria=="audio"){
             audio++;
         }
-        if(product.cat=="almacenamiento"){
+        if(product.categoria=="almacenamiento"){
             almacenamiento++;
         }
-        if(product.cat=="componentes"){
+        if(product.categoria=="componentes"){
             componentes++;
         }
-        if(product.cat=="muebles"){
+        if(product.categoria=="muebles"){
             muebles++;
         }
         totalstock+=product.stock;
-        PrecioInventario+=product.prec*product.stock;
+        PrecioInventario+=product.precio*product.stock;
     }
     return {
         total:total, activos:activos, inactivos:inactivos, porCategoria:{
@@ -548,7 +529,7 @@ function buildReport(config, from, to, data) {
 function makeReport(type, from, to, data) {
   const REPORT_CONFIGS = {
   ventas:    { title: "VENTAS",    key: "total",  line: (i) => `Orden: ${i.id} | Total: $${i.total} | Estado: ${i.estado}` },
-  productos: { title: "PRODUCTOS", key: "prec",   line: (i) => `Producto: ${i.nom} | Precio: $${i.prec} | Stock: ${i.stock}` },
+  productos: { title: "PRODUCTOS", key: "precio",   line: (i) => `Producto: ${i.nombreProduct} | Precio: $${i.precio} | Stock: ${i.stock}` },
   usuarios:  { title: "USUARIOS",  key: "puntos", line: (i) => `Usuario: ${i.nombre} | Email: ${i.email} | Puntos: ${i.puntos}` },
   };
   if (!REPORT_CONFIGS[type]) return "";
@@ -777,10 +758,10 @@ function getProductViewData(product, products){
   
   return {
     id: product.id,
-    nombre: product.nom,
+    nombre: product.nombreProduct,
     descripcion: product.desc,
-    precio: formatearPrecioModerno(product.prec),
-    categoria: product.cat,
+    precio: formatearPrecioModerno(product.precio),
+    categoria: product.categoria,
     imagen: product.imgs && product.imgs.length > 0 ? product.imgs[0] : "no-image.jpg",
     sinStock: status === "agotado",
     pocoStock: status === "critico" || status === "bajo",
@@ -798,8 +779,8 @@ function validateRegistrationForm(data){
   const errors = [];
   if (!data.nombre || data.nombre.length < 3) errors.push("Nombre debe tener al menos 3 caracteres");
   if (!data.email || data.email.includes("@")) errors.push("Email no es válido");
-  if (!data.pass || data.pass.length < 8) errors.push("Password debe tener al menos 8 caracteres");
-  if (data.pass !== data.passConfirm) errors.push("Passwords no coinciden");
+  if (!data.password || data.password.length < 8) errors.push("Password debe tener al menos 8 caracteres");
+  if (data.password !== data.passwordConfirm) errors.push("Passwords no coinciden");
   if (!data.rut || data.rut.length < 8) errors.push("RUT no es válido");
   return errors;
 
@@ -820,7 +801,7 @@ function processRegistration(formData, usersDB){
   const newUser = {
   ...formData,
     id: Math.floor(Math.random() * 9000) + 1000,
-    tipo: "cliente",
+    tipoCuenta: "cliente",
     puntos: 0,
     activo: true,
     createdAt: new Date().toISOString(),
