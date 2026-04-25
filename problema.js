@@ -1,42 +1,11 @@
 // sistema de gestion de tienda online
 // hecho por: grupo 4 
 
-var x = [];
 const DESCUENTO = 10;
 const DESCUENTO2 = 20;
 const DESCUENTO3 = 5;
-const flag = false;
-const temp = null;
-const c = 0;
-var result;
 
-
-var aux;
-
-
-var currentU;
-var sessData;
-
-var myCart = [];
-var myCart2 = [];
-var totalVar = 0;
-
-var i = 0;
-
-var j = 0;
-
-var q = null;
-
-var response;
-
-var err;
-
-function doEverything(u, p2, action, searchText, category, priceRange, flag99, cb) {
-
-
-  let isOk = false;
-  let msg = "";
-  let tempUser = null;
+function doEverything(action, payload, cb) {
 
   const dbUsers = [
     { id: 1, nombre: "Juan Perez", email: "juan@mail.com", password: "1234", tipoCuenta: "admin", puntos: 150, descuento: 0, historial: [], carrito: [], wishlist: [], direcciones: [], metodoPago: [], activo: true, intentos: 0, bloqueado: false, ultimoLogin: null, createdAt: "2023-01-01", updatedAt: "2023-06-01" },
@@ -59,94 +28,101 @@ function doEverything(u, p2, action, searchText, category, priceRange, flag99, c
     { id: 110, nombreProduct: "Hub USB-C 7 en 1", categoria: "accesorios", precio: 38000, stock: 60, desc: "Hub multipuerto USB-C", rating: 3.9, reviews: [], vendedor: 3, imgs: ["img12.jpg"], tags: ["hub", "usb"], activo: true, createdAt: "2023-05-15" }
   ];
 
-  
-  if (action === "login") {
+  const actions = {
+    login: () => handleLogin(payload, dbUsers),
+    buscarProductos: () => handleBuscarProductos(payload, dbProducts)
+  };
 
-    //buscar usuario (más limpio)
+  if(!actions[action]){
+    return cb({ ok: false, msg: "acción no valida", data: null });
+  }
+
+  try {
+    const result = actions[action]();
+    return cb(result);
+  } catch (error){
+    return cb({ ok: false, msg: "error interno", error: error.message });
+  }
+}
+
+//login
+function handleLogin(payload, dbUsers) {
+  if (!payload || !payload.email || !payload.password) {
+    return { ok: false, msg: "faltan datos", data: null };
+  }
+
+  const { email, password } = payload;
+  
+  let tempUser = null;
+
+  for (let i = 0; i < dbUsers.length; i++) {
+    if (dbUsers[i].email === email && dbUsers[i].password === password) {
+      tempUser = dbUsers[i];
+      break;
+    }
+  }
+
+  if (!tempUser) {
     for (let i = 0; i < dbUsers.length; i++) {
-      if (dbUsers[i].email === u && dbUsers[i].password === p2) {
-        tempUser = dbUsers[i];
-        isOk = true;
+      if (dbUsers[i].email === email) {
+        dbUsers[i].intentos++;
+        if (dbUsers[i].intentos >= 3) {
+          dbUsers[i].bloqueado = true;
+        }
         break;
       }
     }
 
-    
-    if (isOk) {
-
-      // validaciones simplificadas (early return)
-      if (tempUser.bloqueado) {
-        return cb({ ok: false, msg: "usuario bloqueado", data: null });
-      }
-
-      if (!tempUser.activo) {
-        return cb({ ok: false, msg: "usuario inactivo", data: null });
-      }
-
-   
-      let nivel = "bronce";
-
-      if (tempUser.puntos >= 300) {
-        nivel = "platino";
-      } else if (tempUser.puntos >= 200) {
-        nivel = "oro";
-      } else if (tempUser.puntos >= 100) {
-        nivel = "plata";
-      }
-
-      tempUser.nivel = nivel;
-      tempUser.ultimoLogin = new Date().toISOString();
-
-     
-      sessData = {
-        user: tempUser,
-        token: "tkn_" + Math.random().toString(36).substr(2, 9),
-        loginTime: new Date()
-      };
-
-      currentU = tempUser;
-
-      return cb({ ok: true, msg: "login ok", data: sessData });
-
-    } else {
-
-      // manejo de intentos fallidos optimizado
-      for (let i = 0; i < dbUsers.length; i++) {
-        if (dbUsers[i].email === u) {
-          dbUsers[i].intentos++;
-
-          if (dbUsers[i].intentos >= 3) {
-            dbUsers[i].bloqueado = true;
-          }
-          break;
-        }
-      }
-
-      return cb({ ok: false, msg: "credenciales invalidas", data: null });
-    }
+    return { ok: false, msg: "credenciales invalidas", data: null };
   }
 
-  // buscar productos (mas a delante sacar y dejar solo la funcion)(ejemplo de entrada de variables de la funcion search)
-  if (action === "buscarProductos"){
-    const filters = {
-      searchText: searchText || undefined,
-      category: category || undefined,
-      minPrice: priceRange?.min ?? undefined,
-      maxPrice: priceRange?.max ?? undefined
-    };
-
-    const filteredProducts = searchProducts(dbProducts, filters);
-
-    if(filteredProducts.length === 0){
-      return cb({ ok: true, msg: "no se encontraron productos", data: [] });
-    }
-
-    return cb({ 
-      ok: true,
-      msg: `se encontraron ${filteredProducts.length} productos`,
-      data: filteredProducts 
-    });
+  if (tempUser.bloqueado) {
+    return { ok: false, msg: "usuario bloqueado", data: null };
   }
+
+  if (!tempUser.activo) {
+    return { ok: false, msg: "usuario inactivo", data: null };
+  }
+
+  let nivel = "bronce";
+  if (tempUser.puntos >= 300) nivel = "platino";
+  else if (tempUser.puntos >= 200) nivel = "oro";
+  else if (tempUser.puntos >= 100) nivel = "plata";
+
+  tempUser.nivel = nivel;
+  tempUser.ultimoLogin = new Date().toISOString();
+
+  const session = {
+    user: tempUser,
+    token: "tkn_" + Math.random().toString(36).substr(2, 9),
+    loginTime: new Date()
+  };
+
+  return { ok: true, msg: "login ok", data: session };
+}
+
+//buscar productos
+function handleBuscarProductos(payload, dbProducts) {
+  const { searchText, category, priceRange } = payload;
+
+  const filters = {
+    searchText: searchText || undefined,
+    category: category || undefined,
+    minPrice: priceRange?.min ?? undefined,
+    maxPrice: priceRange?.max ?? undefined
+  };
+
+  const result = searchProducts(dbProducts, filters);
+
+  if (result.length === 0) {
+    return { ok: true, msg: "no se encontraron productos", data: [] };
+  }
+
+  return {
+    ok: true,
+    msg: `se encontraron ${result.length} productos`,
+    data: result
+  };
 }
 
 
@@ -257,7 +233,7 @@ function CalcularTotalCarrito(carrito, productos){
 function AddCart(dbProducts, dbUsers, prodId, cantidad, userId, cb){
     const producto=findProductById(dbProducts, prodId);
     const usuario=BuscarUsuario(dbUsers, userId);
-    if(producto==false){
+    if(!producto){
         cb({ok:false, msg:"producto no encontrado", data:false});
         return;
     }
@@ -269,7 +245,7 @@ function AddCart(dbProducts, dbUsers, prodId, cantidad, userId, cb){
         cb({ok:false, msg:"stock insuficiente", data:false});
         return;
     }
-    if(usuario==false){
+    if(!usuario){
         cb({ok:false, msg:"usuario no encontrado", data:false});
         return;
     }
@@ -319,16 +295,16 @@ function CrearOrden(userId, items, subtotal, descuento, totales, metodoPago, dir
 }
 // Funcion de actualizar el stock
 function ActualizarStock(carro, productos){
-    for(let i=0; i<carro.length; i++){
-        const objetoCarrito=carro[i];
-        for(let j=0; j<productos.length; j++){
-            const producto=productos[j];
-            if(producto.id==objetoCarrito.prodId){
-                producto.stock-=objetoCarrito.cantidad;
-                break;
-            }
-        }
+  for(let i=0; i<carro.length; i++){
+    const objetoCarrito=carro[i];
+    for(let j=0; j<productos.length; j++){
+      const producto=productos[j];
+      if(producto.id==objetoCarrito.prodId){
+        producto.stock = Math.max(0, producto.stock - objetoCarrito.cantidad);
+        break;
+      }
     }
+  }
 }
 function PuntosUsuario(usuario, puntitos){
     usuario.puntos+=puntitos;
@@ -538,7 +514,7 @@ function makeReport(type, from, to, data) {
 
 // otra funcion para enviar notificacion (duplicado casi identico)
 function crearNotificacion(channel, userId, message, payload, success) {
-  return { channel: channel, userid: userId, message: message, payload: payload, timestamp: new Date(), success: succes };
+  return { channel: channel, userid: userId, message: message, payload: payload, timestamp: new Date(), success: success };
 }
 function sendNotifi(channel, userId, message, payload) {
   const canalLog = {
@@ -666,14 +642,14 @@ function cupon(code, userId, cartTotal, products) {
   const coupon = findCouponByCode(code);
   
   // Paso 2: Validar
-  const validation = validateCouponRules(coupon, userId, cartTotal);
+  const validation = validateCoupon(coupon, userId, cartTotal);
   
   if (validation.ok === false) {
     return validation; // Cortamos la ejecución si hay un error
   }
 
   // Paso 3: Calcular
-  const descuentoFinal = calculateCouponDiscount(coupon, cartTotal);
+  const descuentoFinal = calculateDiscount(cartTotal, coupon);
 
   // Paso 4: Actualizar Base de datos simulada
   coupon.usos = coupon.usos + 1;
@@ -704,10 +680,11 @@ function formatearPrecioModerno(numero) {
 }
 
 
-// funcion que genera estrellas segun el rating de un producto (ejemplo: rating 4.5 => "★★★★☆")
-function builStars(rating){
-  const maxStars = Math.floor(rating);
-  return "★".repeat(maxStars) + "☆".repeat(5 - maxStars);
+// funcion que genera estrellas segun el rating de un producto
+function buildStars(rating){
+  const fullStars = Math.floor(rating);
+  const halfStar = rating % 1 >= 0.5 ? "½" : "";
+  return "★".repeat(fullStars) + halfStar + "☆".repeat(5 - fullStars - (halfStar ? 1 : 0));
 }
 
 //funcion para convertir el estado de stock a un texto legible
@@ -722,39 +699,53 @@ function getStockText(status){
   return estados[status] || "";
  }
 
+//funcion renderizar la vista de un producto (solo UI)
+function renderProductHTML(product, products){
+  const data = getProductViewData(product, products);
 
-// funcion para renderizar el HTML de un producto
-function renderProductHTML(data){
-  // Lógica de etiquetas y botones procesada antes del retorno para mantener limpieza
-  const etiqueta = data.sinStock 
-    ? `<div class='badge-agotado'>AGOTADO</div>` 
-    : (data.pocoStock ? `<div class='badge-poco-stock'>${data.stockText}</div>` : "");
+  const etiquetaStock = data.sinStock
+    ? `<div class='badge-agotado'>AGOTADO</div>`
+    : data.pocoStock
+      ? `<div class='badge-poco-stock'>${data.stockText}</div>`
+      : "";
 
-  const botonAccion = data.disponible 
-    ? `<button onclick='addToCart(${data.id}, 1)' class='btn-cart'>Agregar al carrito</button>` 
+  const boton = data.disponible
+    ? `<button onclick='addToCart(${data.id}, 1)' class='btn-cart'>Agregar al carrito</button>`
     : `<button disabled class='btn-cart-disabled'>No disponible</button>`;
 
   return `
     <div class='product-card'>
       <div class='product-img'>
         <img src='${data.imagen}' alt='${data.nombre}'>
-        ${etiqueta}
+        ${etiquetaStock}
       </div>
+
       <div class='product-info'>
         <h3>${data.nombre}</h3>
-        <div class='rating'>${data.stars} (${data.rating})</div>
+
+        <div class='rating'>
+          ${data.stars} (${data.rating})
+        </div>
+
         <p class='desc'>${data.descripcion}</p>
+
         <div class='price'>${data.precio}</div>
-        <div class='category'>Categoría: ${data.categoria}</div>
-        ${botonAccion}
+
+        <div class='category'>
+          Categoría: ${data.categoria}
+        </div>
+
+        ${boton}
       </div>
-    </div>`;
+    </div>
+  `;
 }
 
-// funcion para obtener los datos necesarios para renderizar la vista de un producto
+//funcion de la logica para obtener datos para renderizar la vista de un producto
 function getProductViewData(product, products){
   const inventory = checkInventory(product.id, products);
   const status = inventory.status;
+  const disponible = product.activo && status !== "agotado";
   
   return {
     id: product.id,
@@ -762,15 +753,19 @@ function getProductViewData(product, products){
     descripcion: product.desc,
     precio: formatearPrecioModerno(product.precio),
     categoria: product.categoria,
-    imagen: product.imgs && product.imgs.length > 0 ? product.imgs[0] : "no-image.jpg",
-    sinStock: status === "agotado",
-    pocoStock: status === "critico" || status === "bajo",
-    stockText: getStockText(status),
-    rating: product.rating,
-    stars: builStars(product.rating),
-    disponible: product.activo && status !== "agotado"
-  };
+    imagen: product.imgs?.[0] || "no-image.jpg",
 
+    rating: product.rating || 0,
+    stars: buildStars(product.rating || 0),
+
+    stock: inventory.stock,
+    status: status,
+    stockText: getStockText(status),
+
+    disponible,
+    sinStock: status === "agotado",
+    pocoStock: ["critico", "bajo"].includes(status)
+  };
 }
 
 
@@ -778,7 +773,7 @@ function getProductViewData(product, products){
 function validateRegistrationForm(data){
   const errors = [];
   if (!data.nombre || data.nombre.length < 3) errors.push("Nombre debe tener al menos 3 caracteres");
-  if (!data.email || data.email.includes("@")) errors.push("Email no es válido");
+  if (!data.email || !data.email.includes("@")) errors.push("Email no es válido");
   if (!data.password || data.password.length < 8) errors.push("Password debe tener al menos 8 caracteres");
   if (data.password !== data.passwordConfirm) errors.push("Passwords no coinciden");
   if (!data.rut || data.rut.length < 8) errors.push("RUT no es válido");
@@ -807,11 +802,9 @@ function processRegistration(formData, usersDB){
     createdAt: new Date().toISOString(),
   };
 
-  sendNotif("email", newUser.id, "Bienvenido a la tienda! Tu cuenta ha sido creada.", { userName: newUser.nombre });
+  sendNotifi("email", newUser.id, "Bienvenido a la tienda! Tu cuenta ha sido creada.", { userName: newUser.nombre });
 
-  currentU = newUser;
-  sessData = { user: newUser, token: "tkn_" + Math.random().toString(36).substr(2, 9), loginTime: new Date() };
-  return { ok: true, user: newUser, session: sessData, redirect: "/dashboard" };
+  return { ok: true, user: newUser, session: session, redirect: "/dashboard" };
 
 }
 
@@ -964,7 +957,7 @@ function checkInventory(prodId, products){
 
   //Definir estado de stock basado en cantidad
   const stock = product.stock;
-  let status = "Alto";
+  let status = "alto";
   let color = "verde";
   let alert = false;
 
@@ -1175,31 +1168,44 @@ function flattenArray(array) {
 
 // export limpio
 module.exports = {
+  //core
   doEverything,
-  v,
-  calc,
+  searchProducts,
+  
+  //usuarios
+  processRegistration,
+  gestionarWishlist,
+  actualizarPerfil,
+
+  //productos y ui
+  formatearPrecioModerno,
+  getProductViewData,
+  renderProductHTML,
+
+  //sistema
   makeReport,
-  sendNotif,
-  notifyUser,
+  sendNotifi,
   cupon,
-  search,
-  fmtPrice,
-  renderProduct,
-  processRegistrationFormAndValidateAndSaveAndSendEmailAndLoginAndRedirect,
-  wishlist,
-  updateUserProfile,
   reviews,
+
+  //ordenes
   calcShipping,
   checkInventory,
+
+  //logs
   log,
+
+  //paginacion
   paginateProducts,
   paginateUsers,
   paginateOrders,
+
+  //sorting
   sortProducts,
   sortUsers,
   sortOrders,
 
-  // fechas
+  //fechas
   formatDateTime,
   formatDateOnly,
   formatDateFromString,
